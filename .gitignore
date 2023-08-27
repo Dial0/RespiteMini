@@ -1,0 +1,75 @@
+# Prerequisites
+*.d
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+.vs/RespiteMini/FileContentIndex/7d16b59d-6aad-494c-9a91-9cf740f6b5be.vsidx
+.vs/RespiteMini/FileContentIndex/cebc79a5-7ee1-4e02-8cf4-2b531107057c.vsidx
+.vs/RespiteMini/FileContentIndex/read.lock
+.vs/RespiteMini/v17/.suo
+.vs/RespiteMini/v17/Browse.VC.db
+.vs/RespiteMini/v17/Browse.VC.db-shm
+.vs/RespiteMini/v17/Browse.VC.db-wal
+.vs/RespiteMini/v17/Browse.VC.opendb
+.vs/RespiteMini/v17/ipch/AutoPCH/c4fa76f1a7729019/MAIN.ipch
+RespiteMini.sln
+RespiteMini/RespiteMini.vcxproj
+RespiteMini/RespiteMini.vcxproj.filters
+RespiteMini/RespiteMini.vcxproj.user
+RespiteMini/x64/Debug/main.obj.enc
+RespiteMini/x64/Debug/RespiteMini.exe.recipe
+RespiteMini/x64/Debug/RespiteMini.log
+RespiteMini/x64/Debug/RespiteMini.tlog/CL.command.1.tlog
+RespiteMini/x64/Debug/RespiteMini.tlog/CL.read.1.tlog
+RespiteMini/x64/Debug/RespiteMini.tlog/CL.write.1.tlog
+RespiteMini/x64/Debug/RespiteMini.tlog/link.command.1.tlog
+RespiteMini/x64/Debug/RespiteMini.tlog/link.read.1.tlog
+RespiteMini/x64/Debug/RespiteMini.tlog/link.write.1.tlog
+RespiteMini/x64/Debug/RespiteMini.tlog/RespiteMini.lastbuildstate
