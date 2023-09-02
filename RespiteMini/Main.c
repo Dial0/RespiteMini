@@ -131,7 +131,7 @@ void calculatePath(iVec2 start, iVec2 end) {
     iVec2 inter = { start.x, end.y };
 }
 
-void moveWagon(WagonEntity* wagon) {
+int moveWagon(WagonEntity* wagon) {
 
     //if we are already at the target return
     if (wagon->wagonTilePos.x == wagon->wagonTargetTilePos.x
@@ -153,10 +153,10 @@ void moveWagon(WagonEntity* wagon) {
     }
     else { // moving up/down
         if (dir.y < 0) { // moving North
-            wagon->aniDir = North;
+            wagon->aniDir = South;
         }
         else { //moving South
-            wagon->aniDir = South;
+            wagon->aniDir = North;
         }
     }
 
@@ -169,7 +169,10 @@ void moveWagon(WagonEntity* wagon) {
         wagon->wagonWorldPos.x = wagon->wagonTilePos.x;
         wagon->wagonWorldPos.y = wagon->wagonTilePos.y;
         wagon->aniFrames = 0;
+        return 1;
     }
+
+    return 0;
 
 }
 
@@ -598,13 +601,18 @@ int main(void)
     RenderParams renderParams = { baseSizeX ,baseSizeY,map.width,map.height,tileSize,smoothScrollY,scale };
 
     bool movingWagon = false;
+
     //iVec2 wagonTilePos = ;
 
     WagonEntity WagonEnt = { (struct iVec2) { 15,0 },(struct Vector2) { 15.0f,0.0f },(struct iVec2) { 15,0 },0, 0.01f };
+    int path[12];
+    int pathsize = 0;
+    int movePathIdx = 0;
 
     unsigned int mapDataSize;
     unsigned char* mapData = LoadFileData("respitetest.rspb", &mapDataSize);
-
+    int mapSizeX = mapData[0];
+    int mapSizeY = mapData[1];
 
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
@@ -618,6 +626,11 @@ int main(void)
         if (IsKeyReleased(KEY_UP)) cursTilePos.y += 1;
         if (IsKeyReleased(KEY_DOWN)) cursTilePos.y -= 1;
 
+        if (cursTilePos.y < 0) cursTilePos.y = 0;
+        if (cursTilePos.y >= mapSizeY) cursTilePos.y = mapSizeY-1;
+        if (cursTilePos.x < 0) cursTilePos.x = 0;
+        if (cursTilePos.x >= mapSizeX) cursTilePos.x = mapSizeX - 1;
+
         int ScrollLockHigh = WagonEnt.wagonTilePos.y * tileSize * scale;
         int ScrollLockLow = ScrollLockHigh - (baseSizeY - tileSize - 1) * scale;
 
@@ -628,9 +641,13 @@ int main(void)
         renderParams.smoothScrollY = smoothScrollY;
 
 
+        if (movingWagon) {
+            pathsize = findAsPath(WagonEnt.wagonTilePos, cursTilePos, mapData, path, 12);
+        }
+
         if (IsKeyReleased(KEY_ENTER)) {
             if (movingWagon) {
-                WagonEnt.wagonTargetTilePos = cursTilePos;
+                WagonEnt.wagonTargetTilePos = mapIdxToXY(path[0],mapSizeX);
                 movingWagon = false;
             }
             else {
@@ -641,16 +658,24 @@ int main(void)
             }
         }
          
-        moveWagon(&WagonEnt);
+        if (movingWagon == false && (movePathIdx < pathsize)) {
+            if (moveWagon(&WagonEnt)) {
+                movePathIdx += 1;
+                if (movePathIdx == pathsize) {
+                    movePathIdx = 0;
+                    pathsize = 0;
+                }
+                else {
+                    WagonEnt.wagonTargetTilePos = mapIdxToXY(path[movePathIdx], mapSizeX);
+                }
+            };
+        }
 
 
         unsigned int tileData = getTileData(cursTilePos.x, cursTilePos.y, mapData);
 
-        int path[12];
-        int pathsize = 0;
-        if (movingWagon) {
-            pathsize = findAsPath(WagonEnt.wagonTilePos, cursTilePos, mapData, path, 12);
-        }
+
+
         
         
 
@@ -680,24 +705,28 @@ int main(void)
 
         iVec2 wagPixel = mapTileXYtoScreenXY(WagonEnt.wagonWorldPos.x, WagonEnt.wagonWorldPos.y, renderParams); //this is awkward, consider changing to tilepos and having the tilepos update in the move func
 
+
+        if (pathsize) {
+            for (int i = 0; i < pathsize; i++) {
+                iVec2 tileLoc = mapIdxToXY(path[i], mapSizeX);
+                iVec2 pathPos = mapTileXYtoScreenXY(tileLoc.x, tileLoc.y, renderParams);
+                DrawRectangle(pathPos.x, pathPos.y, tileSize, tileSize, ColorAlpha(PINK, 0.5f));
+                unsigned int tileData = getTileData(tileLoc.x, tileLoc.y, mapData);
+                int tileMoveCost = calcTileMoveCost(tileData);
+                char str[2];
+                sprintf_s(str, 2, "%i", tileMoveCost);
+                DrawText(str, pathPos.x, pathPos.y, 6, RED);
+            }
+        }
+
+
         renderWagon(WagonEnt, renderParams, wagonAni);
         
 
         DrawTextureRec(ui, cursorRec, (struct Vector2) { cursPixel.x - centOff, cursPixel.y - centOff }, WHITE);
 
 
-        if (movingWagon) {
-            DrawTextureRec(ui, wagonCursRec, (struct Vector2) { wagPixel.x - centOff, wagPixel.y - centOff }, WHITE);
-            DrawLineEx((struct Vector2) { cursPixel.x + tileSize / 2, cursPixel.y + tileSize / 2 }, (struct Vector2) { cursPixel.x + tileSize / 2, wagPixel.y + tileSize / 2 }, 4, PINK);
-            DrawLineEx((struct Vector2) { wagPixel.x + tileSize / 2, wagPixel.y + tileSize / 2 }, (struct Vector2) { cursPixel.x + tileSize / 2, wagPixel.y + tileSize / 2 }, 4, PINK);
-        }
 
-        if (pathsize) {
-            for (int i = 0; i < pathsize; i++) {
-                iVec2 pathPos = mapTileXYtoScreenXY(mapIdxToXY(path[i], 30).x, mapIdxToXY(path[i], 30).y, renderParams);
-                DrawRectangle(pathPos.x, pathPos.y, tileSize, tileSize, ColorAlpha(PINK, 0.5f));
-            }
-        }
         EndTextureMode();
 
 
