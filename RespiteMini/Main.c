@@ -707,7 +707,60 @@ int main(void)
 
 
         if (pathsize) {
-            for (int i = 0; i < pathsize; i++) {
+            for (int i = movePathIdx; i < pathsize; i++) {
+
+                int nextTile = i + 1;
+                if (nextTile < 0) nextTile = -1;
+                int prevTile = i - 1;
+                if (prevTile >= pathsize) prevTile = -1;
+
+                int north = 0b0000000000001000;
+                int east =  0b0000000000000100;
+                int west =  0b0000000000000010;
+                int south = 0b0000000000000001;
+
+                int neighbors = 0;
+                if (nextTile > 0 && prevTile >= 0) { //drawing a path tile, not a start or end
+                    if (path[i] + mapSizeX == nextTile || path[i] + mapSizeX == prevTile) { //tile to the north
+                        neighbors |= north;
+                    }
+                    if (path[i] + 1 == nextTile || path[i] + 1 == prevTile) { //tile to the east
+                        neighbors |= east;
+                    }
+                    if (path[i] - 1 == nextTile || path[i] - 1 == prevTile) { //tile to the west
+                        neighbors |= west;
+                    }
+                    if (path[i] - mapSizeX == nextTile || path[i] - mapSizeX == prevTile) { //tile to the south
+                        neighbors |= south;
+                    }
+                }
+
+                int drawtileID = 0; //start/end tile
+
+                if (neighbors == north | south) {
+                    drawtileID = 1;
+                }
+                else if (neighbors == east | west) {
+                    drawtileID = 2;
+                }
+                else if (neighbors == north | west) {
+                    drawtileID = 3;
+                }
+                else if (neighbors == south | east) {
+                    drawtileID = 4;
+                }
+                else if (neighbors == south | west) {
+                    drawtileID = 5;
+                }
+                else if (neighbors == north | east) {
+                    drawtileID = 6;
+                }
+                else {
+                    drawtileID = -1;
+                }
+
+
+                
                 iVec2 tileLoc = mapIdxToXY(path[i], mapSizeX);
                 iVec2 pathPos = mapTileXYtoScreenXY(tileLoc.x, tileLoc.y, renderParams);
                 DrawRectangle(pathPos.x, pathPos.y, tileSize, tileSize, ColorAlpha(PINK, 0.5f));
