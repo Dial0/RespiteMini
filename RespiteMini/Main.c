@@ -608,6 +608,7 @@ int main(void)
     int path[12];
     int pathsize = 0;
     int movePathIdx = 0;
+    int totalPathCost = 0;
 
     unsigned int mapDataSize;
     unsigned char* mapData = LoadFileData("respitetest.rspb", &mapDataSize);
@@ -643,6 +644,13 @@ int main(void)
 
         if (movingWagon) {
             pathsize = findAsPath(WagonEnt.wagonTilePos, cursTilePos, mapData, path, 12);
+            totalPathCost = 0;
+            for (int i = 0; i < pathsize; i++) {
+                unsigned int dataPos = 2 + path[i] * 4;
+                unsigned int tileData;
+                memcpy(&tileData, mapData + dataPos, 4);
+                totalPathCost += calcTileMoveCost(tileData);
+            }
         }
 
         if (IsKeyReleased(KEY_ENTER)) {
@@ -676,8 +684,6 @@ int main(void)
 
 
 
-        
-        
 
         // Draw
         //----------------------------------------------------------------------------------
@@ -710,9 +716,9 @@ int main(void)
             for (int i = movePathIdx; i < pathsize; i++) {
 
                 int nextTile = i + 1;
-                if (nextTile < 0) nextTile = -1;
+                if (nextTile >= pathsize) nextTile = -1;
                 int prevTile = i - 1;
-                if (prevTile >= pathsize) prevTile = -1;
+                if (prevTile < 0) prevTile = -1;
 
                 int north = 0b0000000000001000;
                 int east =  0b0000000000000100;
@@ -721,54 +727,60 @@ int main(void)
 
                 int neighbors = 0;
                 if (nextTile > 0 && prevTile >= 0) { //drawing a path tile, not a start or end
-                    if (path[i] + mapSizeX == nextTile || path[i] + mapSizeX == prevTile) { //tile to the north
+                    if (path[i] + mapSizeX == path[nextTile] || path[i] + mapSizeX == path[prevTile]) { //tile to the north
                         neighbors |= north;
                     }
-                    if (path[i] + 1 == nextTile || path[i] + 1 == prevTile) { //tile to the east
+                    if (path[i] + 1 == path[nextTile] || path[i] + 1 == path[prevTile]) { //tile to the east
                         neighbors |= east;
                     }
-                    if (path[i] - 1 == nextTile || path[i] - 1 == prevTile) { //tile to the west
+                    if (path[i] - 1 == path[nextTile] || path[i] - 1 == path[prevTile]) { //tile to the west
                         neighbors |= west;
                     }
-                    if (path[i] - mapSizeX == nextTile || path[i] - mapSizeX == prevTile) { //tile to the south
+                    if (path[i] - mapSizeX == path[nextTile] || path[i] - mapSizeX == path[prevTile]) { //tile to the south
                         neighbors |= south;
                     }
                 }
 
                 int drawtileID = 0; //start/end tile
 
-                if (neighbors == north | south) {
+                if (neighbors == (north | south)) {
                     drawtileID = 1;
                 }
-                else if (neighbors == east | west) {
+                else if (neighbors == (east | west)) {
                     drawtileID = 2;
                 }
-                else if (neighbors == north | west) {
+                else if (neighbors == (north | west)) {
                     drawtileID = 3;
                 }
-                else if (neighbors == south | east) {
+                else if (neighbors == (south | east)) {
                     drawtileID = 4;
                 }
-                else if (neighbors == south | west) {
+                else if (neighbors == (south | west)) {
                     drawtileID = 5;
                 }
-                else if (neighbors == north | east) {
+                else if (neighbors == (north | east)) {
                     drawtileID = 6;
                 }
                 else {
                     drawtileID = -1;
                 }
 
+                Rectangle pathTileSrc = { drawtileID * tileSize, 2 * tileSize, tileSize,tileSize };
 
+                
                 
                 iVec2 tileLoc = mapIdxToXY(path[i], mapSizeX);
                 iVec2 pathPos = mapTileXYtoScreenXY(tileLoc.x, tileLoc.y, renderParams);
-                DrawRectangle(pathPos.x, pathPos.y, tileSize, tileSize, ColorAlpha(PINK, 0.5f));
+
                 unsigned int tileData = getTileData(tileLoc.x, tileLoc.y, mapData);
                 int tileMoveCost = calcTileMoveCost(tileData);
+
+                //DrawRectangle(pathPos.x, pathPos.y, tileSize, tileSize, ColorAlpha(RED, ((float)tileMoveCost-2.0f)/8.0f));
+                DrawTextureRec(ui, pathTileSrc, (struct Vector2) { pathPos.x, pathPos.y }, WHITE);
+
                 char str[2];
                 sprintf_s(str, 2, "%i", tileMoveCost);
-                DrawText(str, pathPos.x, pathPos.y, 6, RED);
+                //DrawText(str, pathPos.x, pathPos.y, 6, RED);
             }
         }
 
@@ -796,8 +808,11 @@ int main(void)
         renderTileInfo(map.width*scale + 10, 10, tileData);
 
 
-        DrawText("PATH", 10, 10, 32, RED);
         
+        
+        char str[3];
+        sprintf_s(str, 3, "%i", totalPathCost);
+        DrawText(str, 10, 10, 32, RED);
         
 
         EndDrawing();
