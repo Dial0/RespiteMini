@@ -86,6 +86,10 @@ typedef struct WagonAni {
     Rectangle altSouth;
 
 } WagonAni;
+
+Font font;
+int fontSize = 15;
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -291,7 +295,7 @@ void renderTileInfo(int x, int y, unsigned int tileData) {
     char str[80];
 
     sprintf_s(str,80, "Move Cost: %i", tileMoveCost);
-
+    
     DrawText(str, x, textYHeight, textHeight, RED);
     textYHeight += textHeight + textSpacing;
 
@@ -564,6 +568,8 @@ int main(void)
     Texture2D map = LoadTexture("C:\\Users\\Ethan\\OneDrive - FabDepot\\game stuff\\Mini Respite\\respiteTestMap.png");
     Texture2D ui = LoadTexture("C:\\Users\\Ethan\\OneDrive - FabDepot\\game stuff\\Mini Respite\\ui.png");
     Texture2D wagon = LoadTexture("C:\\Users\\Ethan\\OneDrive - FabDepot\\game stuff\\Mini Respite\\wagon.png");
+    font = LoadFontEx("rainyhearts.ttf",fontSize,NULL,0);
+    SetTextureFilter(font.texture, TEXTURE_FILTER_POINT);
 
     Rectangle wagonNorth = {0.0f,0.0f,16.0f,16.0f };
     Rectangle altWagonNorth = { 16.0f,0.0f,16.0f,16.0f };
@@ -615,6 +621,8 @@ int main(void)
     int mapSizeX = mapData[0];
     int mapSizeY = mapData[1];
 
+    
+
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
@@ -626,6 +634,9 @@ int main(void)
         if (IsKeyReleased(KEY_LEFT)) cursTilePos.x -= 1;
         if (IsKeyReleased(KEY_UP)) cursTilePos.y += 1;
         if (IsKeyReleased(KEY_DOWN)) cursTilePos.y -= 1;
+
+        if (IsKeyReleased(KEY_LEFT_BRACKET)) fontSize -= 1;
+        if (IsKeyReleased(KEY_RIGHT_BRACKET)) fontSize += 1;
 
         if (cursTilePos.y < 0) cursTilePos.y = 0;
         if (cursTilePos.y >= mapSizeY) cursTilePos.y = mapSizeY-1;
@@ -781,6 +792,8 @@ int main(void)
                 char str[2];
                 sprintf_s(str, 2, "%i", tileMoveCost);
                 //DrawText(str, pathPos.x, pathPos.y, 6, RED);
+
+                
             }
         }
 
@@ -790,20 +803,23 @@ int main(void)
 
         DrawTextureRec(ui, cursorRec, (struct Vector2) { cursPixel.x - centOff, cursPixel.y - centOff }, WHITE);
 
-
+        
 
         EndTextureMode();
 
 
         BeginTextureMode(gameRendRexTemp);
-        DrawTexture(gameRendRex.texture, 0,0, WHITE);
-
+        //DrawTexture(gameRendRex.texture, 0,0, WHITE);
+        //Rectangle source = { 0, 0, gameRendRex.texture.width, -gameRendRex.texture.height };
+        //DrawTextureRec(gameRendRex.texture, source, (Vector2) { 0, 0 }, WHITE);
         EndTextureMode();
 
 
-        
-        DrawTextureEx(gameRendRexTemp.texture, (struct Vector2) { 0, -scale+smoothScrollY%scale }, 0.0f, scale, WHITE);
+        Rectangle source = { 0, 0, gameRendRex.texture.width, -gameRendRex.texture.height };
+        DrawTexturePro(gameRendRex.texture, source,(struct Rectangle) { 0, -scale+smoothScrollY%scale, baseSizeX* scale, baseSizeY* scale
+        }, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
 
+        DrawTextEx(font, "test", (struct Vector2) { 20, 20 }, fontSize*scale, 1, RED);
         
         renderTileInfo(map.width*scale + 10, 10, tileData);
 
