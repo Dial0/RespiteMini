@@ -811,7 +811,8 @@ int main(void)
         BeginTextureMode(uiRendTex);
 
         int cornerTileSize = 16;
-        int windowX = mapSizeX * tileSize;
+        int edgeSpacing = 8;
+        int windowX = mapSizeX * cornerTileSize;
         int windowY = 0;
         int windowSizeX = 120;
         int windowSizeY = baseSizeY;
@@ -853,6 +854,17 @@ int main(void)
         DrawTexturePro(ui, centerSrc, center, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
 
 
+        int tileInfoY = windowY + edgeSpacing + 32;
+        int tileInfoSpacing = 36;
+
+        if (tSWAMP & tileData) {
+            Rectangle swapIconSrc = { 0,64,32,32 };
+            DrawTextureRec(ui, swapIconSrc,(struct Vector2) { windowX + edgeSpacing, tileInfoY}, WHITE);
+            DrawTextEx(font, "Swamp", (struct Vector2) { windowX + edgeSpacing + 32 + 2, tileInfoY }, fontSize, 1, (Color){218,165,84,255});
+
+            tileInfoY += tileInfoSpacing;
+        }
+
         
 
         //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
@@ -867,7 +879,7 @@ int main(void)
 
         
         
-        renderTileInfoDebug(map.width* scale + (tileSize * scale), tileSize* scale , tileData);
+        //renderTileInfoDebug(map.width* scale + (tileSize * scale), tileSize* scale , tileData);
 
 
         
