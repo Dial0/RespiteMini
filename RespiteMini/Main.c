@@ -1,47 +1,22 @@
-
-
-/*******************************************************************************************
-*
-*   raylib [core] example - Basic window
-*
-*   Welcome to raylib!
-*
-*   To test examples, just press F6 and execute raylib_compile_execute script
-*   Note that compiled executable is placed in the same folder as .c file
-*
-*   You can find all basic examples on C:\raylib\raylib\examples folder or
-*   raylib official webpage: www.raylib.com
-*
-*   Enjoy using raylib. :)
-*
-*   Example originally created with raylib 1.0, last time updated with raylib 1.0
-*
-*   Example licensed under an unmodified zlib/libpng license, which is an OSI-certified,
-*   BSD-like license that allows static linking with closed source software
-*
-*   Copyright (c) 2013-2023 Ramon Santamaria (@raysan5)
-*
-********************************************************************************************/
-
-#define tBRIDGE_HOUSE   0b0001000000000000
-#define tTREES          0b0000100000000000
-#define tWATER          0b0000010000000000
-#define tCLIFFS_MOUNT   0b0000001000000000
-#define tTUNDRA         0b0000000100000000
-#define tSNOW           0b0000000010000000
-#define tDARK_GRASS     0b0000000001000000
-#define tLIGHT_GRASS    0b0000000000100000
-#define tSWAMP_WATER    0b0000000000010000
-#define tBARREN         0b0000000000001000
-#define tDESERT         0b0000000000000100
-#define tSWAMP          0b0000000000000010
 #define tBASE           0b0000000000000001
-
+#define tSWAMP          0b0000000000000010
+#define tDESERT         0b0000000000000100
+#define tBARREN         0b0000000000001000
+#define tSWAMP_WATER    0b0000000000010000
+#define tLIGHT_GRASS    0b0000000000100000
+#define tDARK_GRASS     0b0000000001000000
+#define tSNOW           0b0000000010000000
+#define tTUNDRA         0b0000000100000000
+#define tCLIFFS_MOUNT   0b0000001000000000
+#define tWATER          0b0000010000000000
+#define tTREES          0b0000100000000000
+#define tBRIDGE_HOUSE   0b0001000000000000
 
 #include "raylib.h"
 #include "raymath.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 enum MoveDir { North, South, East, West };
 
@@ -140,7 +115,7 @@ int moveWagon(WagonEntity* wagon) {
     //if we are already at the target return
     if (wagon->wagonTilePos.x == wagon->wagonTargetTilePos.x
         && wagon->wagonTilePos.y == wagon->wagonTargetTilePos.y) {
-        return;
+        return 1;
     }
     Vector2 target = { wagon->wagonTargetTilePos.x, wagon->wagonTargetTilePos.y };
     Vector2 dir = Vector2Normalize(Vector2Subtract(target, wagon->wagonWorldPos));
@@ -285,6 +260,46 @@ int calcTileMoveCost(unsigned int tileData) {
     return moveCost;
 }
 
+void renderUiWindow(Texture2D ui, int windowX, int windowY, int windowSizeX, int windowSizeY) {
+    int cornerTileSize = 16;
+
+    Rectangle topLeftSrc = { 128,0,16,16 };
+    Rectangle topRightSrc = { 160,0,16,16 };
+    Rectangle bottomLeftSrc = { 128,32,16,16 };
+    Rectangle bottomRightSrc = { 160,32,16,16 };
+
+    Vector2 topLeft = { windowX ,windowY};
+    Vector2 topRight = { windowX + windowSizeX - cornerTileSize,windowY };
+    Vector2 bottomLeft = { windowX, windowY + windowSizeY - cornerTileSize };
+    Vector2 bottomRight = { windowX + windowSizeX - cornerTileSize, windowY + windowSizeY - cornerTileSize };
+
+    Rectangle topBarSrc = { 144,0,16,16 };
+    Rectangle bottomBarSrc = { 144,32,16,16 };
+    Rectangle leftBarSrc = { 128,16,16,16 };
+    Rectangle rightBarSrc = { 160,16,16,16 };
+
+    Rectangle topBar = { windowX + cornerTileSize,windowY, windowSizeX - (cornerTileSize * 2),cornerTileSize };
+    Rectangle bottomBar = { windowX + cornerTileSize,windowY + windowSizeY - cornerTileSize, windowSizeX - (cornerTileSize * 2),cornerTileSize };
+    Rectangle leftBar = { windowX,windowY + cornerTileSize, cornerTileSize,windowSizeY - (cornerTileSize * 2) };
+    Rectangle rightBar = { windowX + windowSizeX - cornerTileSize,windowY + cornerTileSize,cornerTileSize ,windowSizeY - (cornerTileSize * 2) };
+
+    Rectangle centerSrc = { 144,16,16,16 };
+
+    Rectangle center = { windowX + cornerTileSize,windowY + cornerTileSize, windowSizeX - (cornerTileSize * 2),windowSizeY- (cornerTileSize * 2) };
+
+    DrawTextureRec(ui, topLeftSrc, topLeft, WHITE);
+    DrawTextureRec(ui, topRightSrc, topRight, WHITE);
+    DrawTextureRec(ui, bottomLeftSrc, bottomLeft, WHITE);
+    DrawTextureRec(ui, bottomRightSrc, bottomRight, WHITE);
+
+    DrawTexturePro(ui, topBarSrc, topBar, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+    DrawTexturePro(ui, bottomBarSrc, bottomBar, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+    DrawTexturePro(ui, leftBarSrc, leftBar, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+    DrawTexturePro(ui, rightBarSrc, rightBar, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+
+    DrawTexturePro(ui, centerSrc, center, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+}
+
 void renderTileInfoDebug(int x, int y, unsigned int tileData) {
     int textYHeight = y;
     int textHeight = 32;
@@ -346,6 +361,41 @@ void renderTileInfoDebug(int x, int y, unsigned int tileData) {
     if (tBRIDGE_HOUSE & tileData) {
         DrawText("Town", x, textYHeight, textHeight, RED);
         textYHeight += textHeight + textSpacing;
+    }
+}
+
+int renderTileInfo(Texture2D ui,int posX, int posY, int tileId, int level) {
+    Rectangle iconSrc = { tileId*32,64,32,32 };
+    DrawTextureRec(ui, iconSrc,(struct Vector2) { posX, posY}, WHITE);
+
+    char* tileName;
+
+    if (tileId == 0) {
+        tileName = "Swamp";
+    } else if (tileId == 1) {
+        tileName = "Desert";
+    } else if (tileId == 2) {
+        tileName = "Barrens";
+    } else if (tileId == 3) {
+        tileName = "Tussock";
+    } else if (tileId == 4) {
+        tileName = "Grasslands";
+    } else if (tileId == 5) {
+        tileName = "Snow";
+    } else if (tileId == 6) {
+        tileName = "Tundra";
+    } else if (tileId == 7) {
+        tileName = "Forrest";
+    }
+    
+    DrawTextEx(font, tileName, (struct Vector2) { posX + 32 + 2, posY }, fontSize, 1, (Color){218,165,84,255});
+
+    if (level == 3) {
+        DrawTextEx(font, "Prominent", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 1, (Color){218,165,84,255});
+    } else if (level == 2){
+        DrawTextEx(font, "Moderate", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 1, (Color){218,165,84,255});
+    } else {
+        DrawTextEx(font, "Sparse", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 1, (Color){218,165,84,255});
     }
 }
 
@@ -810,61 +860,81 @@ int main(void)
 
         BeginTextureMode(uiRendTex);
 
-        int cornerTileSize = 16;
-        int edgeSpacing = 8;
-        int windowX = mapSizeX * cornerTileSize;
+        int windowX = mapSizeX * tileSize;
         int windowY = 0;
         int windowSizeX = 120;
         int windowSizeY = baseSizeY;
+        int edgeSpacing = 8;
 
-        Rectangle topLeftSrc = { 128,0,16,16 };
-        Rectangle topRightSrc = { 160,0,16,16 };
-        Rectangle bottomLeftSrc = { 128,32,16,16 };
-        Rectangle bottomRightSrc = { 160,32,16,16 };
-
-        Vector2 topLeft = { windowX ,windowY};
-        Vector2 topRight = { windowX + windowSizeX - cornerTileSize,windowY };
-        Vector2 bottomLeft = { windowX, windowY + windowSizeY - cornerTileSize };
-        Vector2 bottomRight = { windowX + windowSizeX - cornerTileSize, windowY + windowSizeY - cornerTileSize };
-
-        Rectangle topBarSrc = { 144,0,16,16 };
-        Rectangle bottomBarSrc = { 144,32,16,16 };
-        Rectangle leftBarSrc = { 128,16,16,16 };
-        Rectangle rightBarSrc = { 160,16,16,16 };
-
-        Rectangle topBar = { windowX + cornerTileSize,windowY, windowSizeX - (cornerTileSize * 2),cornerTileSize };
-        Rectangle bottomBar = { windowX + cornerTileSize,windowY + windowSizeY - cornerTileSize, windowSizeX - (cornerTileSize * 2),cornerTileSize };
-        Rectangle leftBar = { windowX,windowY + cornerTileSize, cornerTileSize,windowSizeY - (cornerTileSize * 2) };
-        Rectangle rightBar = { windowX + windowSizeX - cornerTileSize,windowY + cornerTileSize,cornerTileSize ,windowSizeY - (cornerTileSize * 2) };
-
-        Rectangle centerSrc = { 144,16,16,16 };
-
-        Rectangle center = { windowX + cornerTileSize,windowY + cornerTileSize, windowSizeX - (cornerTileSize * 2),windowSizeY- (cornerTileSize * 2) };
-
-        DrawTextureRec(ui, topLeftSrc, topLeft, WHITE);
-        DrawTextureRec(ui, topRightSrc, topRight, WHITE);
-        DrawTextureRec(ui, bottomLeftSrc, bottomLeft, WHITE);
-        DrawTextureRec(ui, bottomRightSrc, bottomRight, WHITE);
-
-        DrawTexturePro(ui, topBarSrc, topBar, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
-        DrawTexturePro(ui, bottomBarSrc, bottomBar, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
-        DrawTexturePro(ui, leftBarSrc, leftBar, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
-        DrawTexturePro(ui, rightBarSrc, rightBar, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
-
-        DrawTexturePro(ui, centerSrc, center, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
-
-
-        int tileInfoY = windowY + edgeSpacing + 32;
+        renderUiWindow(ui,windowX,windowY,windowSizeX,windowSizeY);
+        
+        int tileInfoY = windowX + edgeSpacing + 32;
         int tileInfoSpacing = 36;
 
-        if (tSWAMP & tileData) {
-            Rectangle swapIconSrc = { 0,64,32,32 };
-            DrawTextureRec(ui, swapIconSrc,(struct Vector2) { windowX + edgeSpacing, tileInfoY}, WHITE);
-            DrawTextEx(font, "Swamp", (struct Vector2) { windowX + edgeSpacing + 32 + 2, tileInfoY }, fontSize, 1, (Color){218,165,84,255});
+        int terrainFlags = 0b0000000111101110;
 
+        int tileTerrains = tileData & terrainFlags;
+
+        int numTerrains = 0;
+        for (int i = 0; i < 32; i++) {
+            if((tileTerrains >> i) & 0b0000000000000001) numTerrains += 1;
+        }
+
+        int terrainLevel = 0;
+
+        if(numTerrains >= 3) {
+            terrainLevel = 1;
+        } else if (numTerrains == 2) {
+            terrainLevel = 2;
+        } else {
+            terrainLevel = 3;
+        }
+
+        if (tSWAMP & tileData) {
+            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,0,terrainLevel);
             tileInfoY += tileInfoSpacing;
         }
 
+        if (tDESERT & tileData) {
+            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,1,terrainLevel);
+            tileInfoY += tileInfoSpacing;
+        }
+        if (tBARREN & tileData) {
+            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,2,terrainLevel);
+            tileInfoY += tileInfoSpacing;
+        }
+        if (tSWAMP_WATER & tileData) {
+
+        }
+        if (tLIGHT_GRASS & tileData) {
+            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,3,terrainLevel);
+            tileInfoY += tileInfoSpacing;
+        }
+        if (tDARK_GRASS & tileData) {
+            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,4,terrainLevel);
+            tileInfoY += tileInfoSpacing;
+        }
+        if (tSNOW & tileData) {
+            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,5,terrainLevel);
+            tileInfoY += tileInfoSpacing;
+        }
+        if (tTUNDRA & tileData) {
+            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,6,terrainLevel);
+            tileInfoY += tileInfoSpacing;
+        }
+        if (tCLIFFS_MOUNT & tileData) {
+
+        }
+        if (tWATER & tileData) {
+
+        }
+        if (tTREES & tileData) {
+            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,7,terrainLevel);
+            tileInfoY += tileInfoSpacing;
+        }
+        if (tBRIDGE_HOUSE & tileData) {
+
+        }
         
 
         //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
