@@ -14,9 +14,22 @@
 
 #include "raylib.h"
 #include "raymath.h"
+
+#if defined(PLATFORM_WEB)
+    #define CUSTOM_MODAL_DIALOGS            // Force custom modal dialogs usage
+    #include <emscripten/emscripten.h>      // Emscripten library - LLVM to JavaScript compiler
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define SUPPORT_LOG_INFO
+#if defined(SUPPORT_LOG_INFO)
+    #define LOG(...) printf(__VA_ARGS__)
+#else
+    #define LOG(...)
+#endif
 
 enum MoveDir { North, South, East, West };
 
@@ -64,6 +77,39 @@ typedef struct WagonAni {
 
 Font font;
 int fontSize = 15;
+
+typedef struct State {
+    int tileSize;
+    int baseSizeX;
+    int baseSizeY;
+    int scale ;
+    int screenWidth;
+    int screenHeight;
+
+    Texture2D map;
+    Texture2D ui;
+    Texture2D wagon;
+
+    WagonAni wagonAni;
+
+    int smoothScrollY;
+    iVec2 cursTilePos;
+    RenderTexture2D mapRendTex;
+    RenderTexture2D uiRendTex;
+    RenderParams renderParams;
+
+    int movingWagon;
+    WagonEntity WagonEnt;
+    int path[12];
+    int pathsize;
+    int movePathIdx;
+    int totalPathCost;
+
+    unsigned int mapDataSize;
+    unsigned char* mapData;
+    int mapSizeX;
+    int mapSizeY;
+}State;
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -674,26 +720,261 @@ int findAsPath(iVec2 startTile, iVec2 endTile, unsigned char* mapData, int* path
     return 0;
 }
 
+
+void UpdateDrawFrame(void* v_state){
+
+    State* state = (State*)v_state;
+    Rectangle cursorRec = { 0.0f,0.0f,18.0f,18.0f };
+
+    if (IsKeyReleased(KEY_RIGHT)) state->cursTilePos.x += 1;
+    if (IsKeyReleased(KEY_LEFT)) state->cursTilePos.x -= 1;
+    if (IsKeyReleased(KEY_UP)) state->cursTilePos.y += 1;
+    if (IsKeyReleased(KEY_DOWN)) state->cursTilePos.y -= 1;
+
+    if (IsKeyReleased(KEY_LEFT_BRACKET)) fontSize -= 1;
+    if (IsKeyReleased(KEY_RIGHT_BRACKET)) fontSize += 1;
+
+    if (state->cursTilePos.y < 0) state->cursTilePos.y = 0;
+    if (state->cursTilePos.y >= state->mapSizeY) state->cursTilePos.y = state->mapSizeY-1;
+    if (state->cursTilePos.x < 0) state->cursTilePos.x = 0;
+    if (state->cursTilePos.x >= state->mapSizeX) state->cursTilePos.x = state->mapSizeX - 1;
+
+    int ScrollLockHigh = state->WagonEnt.wagonTilePos.y * state->tileSize * state->scale;
+    int ScrollLockLow = ScrollLockHigh - (state->baseSizeY - state->tileSize - 1) * state->scale;
+
+    if (IsKeyDown(KEY_W) && state->smoothScrollY <= (state->map.height - state->baseSizeY + 1)*state->scale && state->smoothScrollY< ScrollLockHigh) state->smoothScrollY += 1;
+    if (IsKeyDown(KEY_S) && state->smoothScrollY>0 && state->smoothScrollY > ScrollLockLow) state->smoothScrollY -= 1;
+
+
+    state->renderParams.smoothScrollY = state->smoothScrollY;
+
+
+    if (state->movingWagon) {
+        state->pathsize = findAsPath(state->WagonEnt.wagonTilePos, state->cursTilePos, state->mapData, state->path, 12);
+        state->totalPathCost = 0;
+        for (int i = 0; i < state->pathsize; i++) {
+            unsigned int dataPos = 2 + state->path[i] * 4;
+            unsigned int tileData;
+            memcpy(&tileData, state->mapData + dataPos, 4);
+            state->totalPathCost += calcTileMoveCost(tileData);
+        }
+    }
+
+    if (IsKeyReleased(KEY_ENTER)) {
+        if (state->movingWagon) {
+            state->WagonEnt.wagonTargetTilePos = mapIdxToXY(state->path[0],state->mapSizeX);
+            state->movingWagon = false;
+        }
+        else {
+            int res = memcmp(&state->WagonEnt.wagonTilePos, &state->cursTilePos,sizeof(iVec2));
+            if (res == 0) {
+                state->movingWagon = true;
+            }
+        }
+    }
+        
+    if (state->movingWagon == false && (state->movePathIdx < state->pathsize)) {
+        if (moveWagon(&state->WagonEnt)) {
+            state->movePathIdx += 1;
+            if (state->movePathIdx == state->pathsize) {
+                state->movePathIdx = 0;
+                state->pathsize = 0;
+            }
+            else {
+                state->WagonEnt.wagonTargetTilePos = mapIdxToXY(state->path[state->movePathIdx], state->mapSizeX);
+            }
+        };
+    }
+
+
+    unsigned int tileData = getTileData(state->cursTilePos.x, state->cursTilePos.y, state->mapData);
+
+
+
+
+    // Draw
+    //----------------------------------------------------------------------------------
+    BeginDrawing();
+
+    ClearBackground(RAYWHITE);
+
+    
+
+    BeginTextureMode(state->mapRendTex);
+
+    ClearBackground(RAYWHITE);
+
+    int scrollOffset = (state->smoothScrollY / state->scale);
+
+    int mapRenderOffset = -(state->map.height - state->mapRendTex.texture.height);
+
+    DrawTexture(state->map, 0, mapRenderOffset + scrollOffset, WHITE);
+
+    //drawDebugGrid(renderParams);
+
+    int centOff = (cursorRec.width - state->tileSize) / 2;
+    iVec2 cursPixel = mapTileXYtoScreenXY(state->cursTilePos.x, state->cursTilePos.y, state->renderParams);
+
+
+    iVec2 wagPixel = mapTileXYtoScreenXY(state->WagonEnt.wagonWorldPos.x, state->WagonEnt.wagonWorldPos.y, state->renderParams); //this is awkward, consider changing to tilepos and having the tilepos update in the move func
+
+
+    if (state->pathsize) {
+        for (int i = state->movePathIdx; i < state->pathsize; i++) {
+
+            int nextTile = i + 1;
+            if (nextTile >= state->pathsize) nextTile = -1;
+            int prevTile = i - 1;
+            if (prevTile < 0) prevTile = -1;
+
+            int north = 0b0000000000001000;
+            int east =  0b0000000000000100;
+            int west =  0b0000000000000010;
+            int south = 0b0000000000000001;
+
+            int neighbors = 0;
+            if (nextTile > 0 && prevTile >= 0) { //drawing a path tile, not a start or end
+                if (state->path[i] + state->mapSizeX == state->path[nextTile] || state->path[i] + state->mapSizeX == state->path[prevTile]) { //tile to the north
+                    neighbors |= north;
+                }
+                if (state->path[i] + 1 == state->path[nextTile] || state->path[i] + 1 == state->path[prevTile]) { //tile to the east
+                    neighbors |= east;
+                }
+                if (state->path[i] - 1 == state->path[nextTile] || state->path[i] - 1 == state->path[prevTile]) { //tile to the west
+                    neighbors |= west;
+                }
+                if (state->path[i] - state->mapSizeX == state->path[nextTile] || state->path[i] - state->mapSizeX == state->path[prevTile]) { //tile to the south
+                    neighbors |= south;
+                }
+            }
+
+            int drawtileID = 0; //start/end tile
+
+            if (neighbors == (north | south)) {
+                drawtileID = 1;
+            }
+            else if (neighbors == (east | west)) {
+                drawtileID = 2;
+            }
+            else if (neighbors == (north | west)) {
+                drawtileID = 3;
+            }
+            else if (neighbors == (south | east)) {
+                drawtileID = 4;
+            }
+            else if (neighbors == (south | west)) {
+                drawtileID = 5;
+            }
+            else if (neighbors == (north | east)) {
+                drawtileID = 6;
+            }
+            else {
+                drawtileID = -1;
+            }
+
+            Rectangle pathTileSrc = { drawtileID * state->tileSize, 2 * state->tileSize, state->tileSize,state->tileSize };
+
+            
+            
+            iVec2 tileLoc = mapIdxToXY(state->path[i], state->mapSizeX);
+            iVec2 pathPos = mapTileXYtoScreenXY(tileLoc.x, tileLoc.y, state->renderParams);
+
+            unsigned int tileData = getTileData(tileLoc.x, tileLoc.y, state->mapData);
+            int tileMoveCost = calcTileMoveCost(tileData);
+
+            //DrawRectangle(pathPos.x, pathPos.y, tileSize, tileSize, ColorAlpha(RED, ((float)tileMoveCost-2.0f)/8.0f));
+            DrawTextureRec(state->ui, pathTileSrc, (struct Vector2) { pathPos.x, pathPos.y }, WHITE);
+
+            char str[2];
+            sprintf_s(str, 2, "%i", tileMoveCost);
+            //DrawText(str, pathPos.x, pathPos.y, 6, RED);
+
+            
+        }
+    }
+
+
+    renderWagon(state->WagonEnt, state->renderParams, state->wagonAni);
+    
+
+    DrawTextureRec(state->ui, cursorRec, (struct Vector2) { cursPixel.x - centOff, cursPixel.y - centOff }, WHITE);
+
+    
+
+    EndTextureMode();
+
+
+    BeginTextureMode(state->uiRendTex);
+
+        int windowX = state->mapSizeX * state->tileSize;
+        int windowY = 0;
+        int windowSizeX = 120;
+        int windowSizeY = state->baseSizeY;
+
+        renderTileInfoWindow(state->ui,windowX,windowY,windowSizeX,windowSizeY,tileData);
+
+    //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
+    EndTextureMode();
+
+
+    Rectangle mapRendTexSrc = { 0, 0, state->mapRendTex.texture.width, -state->mapRendTex.texture.height };
+    DrawTexturePro(state->mapRendTex.texture, mapRendTexSrc,
+        (struct Rectangle) { 0, -state->scale+state->smoothScrollY%state->scale, state->baseSizeX* state->scale, state->baseSizeY* state->scale},
+        (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+    
+    Rectangle uiRendTexSrc = { 0, 0, state->uiRendTex.texture.width, -state->uiRendTex.texture.height };
+    DrawTexturePro(state->uiRendTex.texture, uiRendTexSrc,
+        (struct Rectangle) { 0, 0, state->baseSizeX* state->scale, state->baseSizeY* state->scale},
+        (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+
+    
+    
+    //renderTileInfoDebug(map.width* scale + (tileSize * scale), tileSize* scale , tileData);
+
+
+    
+    
+    char str[3];
+    sprintf_s(str, 3, "%i", state->totalPathCost);
+    DrawText(str, 10, 10, 32, RED);
+    
+
+    EndDrawing();
+    //----------------------------------------------------------------------------------
+}
+
 int main(void)
 {
-    const int tileSize = 16;
-    const int baseSizeX = 600;
-    const int baseSizeY = 230;
-    const int scale = 4;
+
+    
+    #if !defined(_DEBUG)
+        SetTraceLogLevel(LOG_NONE);         // Disable raylib trace log messsages
+    #endif
+
+    State state;
+
+    state.tileSize = 16;
+    state.baseSizeX = 600;
+    state.baseSizeY = 230;
+    state.scale = 4;
     // Initialization
     //--------------------------------------------------------------------------------------
-    const int screenWidth = baseSizeX* scale;
-    const int screenHeight = baseSizeY* scale - scale;
+    state.screenWidth = state.baseSizeX* state.scale;
+    state.screenHeight = state.baseSizeY* state.scale - state.scale;
 
-    InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+    InitWindow(state.screenWidth, state.screenHeight, "raylib [core] example - basic window");
 
     SetWindowState(FLAG_WINDOW_RESIZABLE);
 
-    Texture2D map = LoadTexture("C:\\Users\\Ethan\\OneDrive - FabDepot\\game stuff\\Mini Respite\\respiteTestMap.png");
-    Texture2D ui = LoadTexture("C:\\Users\\Ethan\\OneDrive - FabDepot\\game stuff\\Mini Respite\\ui.png");
-    Texture2D wagon = LoadTexture("C:\\Users\\Ethan\\OneDrive - FabDepot\\game stuff\\Mini Respite\\wagon.png");
+    state.map = LoadTexture("C:\\Users\\Ethan\\OneDrive - FabDepot\\game stuff\\Mini Respite\\respiteTestMap.png");
+    state.ui = LoadTexture("C:\\Users\\Ethan\\OneDrive - FabDepot\\game stuff\\Mini Respite\\ui.png");
+    state.wagon = LoadTexture("C:\\Users\\Ethan\\OneDrive - FabDepot\\game stuff\\Mini Respite\\wagon.png");
+
+    //global
     font = LoadFontEx("rainyhearts.ttf",fontSize,NULL,0);
     SetTextureFilter(font.texture, TEXTURE_FILTER_POINT);
+
+
 
     Rectangle wagonNorth = {0.0f,0.0f,16.0f,16.0f };
     Rectangle altWagonNorth = { 16.0f,0.0f,16.0f,16.0f };
@@ -711,7 +992,7 @@ int main(void)
     Rectangle wagonCursRec = { 19.0f,0.0f,18.0f,18.0f };
 
 
-    WagonAni wagonAni = { wagon,
+    state.wagonAni = (WagonAni){ state.wagon,
         wagonNorth, altWagonNorth,
         wagonEast, altWagonEast,
         wagonWest, altWagonWest,
@@ -719,254 +1000,38 @@ int main(void)
     };
 
 
-    SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
+    // Set our game frames-per-second
     //--------------------------------------------------------------------------------------
     //ToggleFullscreen();
 
-    int smoothScrollY = 0;
-    iVec2 cursTilePos = { 15,0 };
-    RenderTexture2D mapRendTex = LoadRenderTexture(baseSizeX, baseSizeY);
-    RenderTexture2D uiRendTex = LoadRenderTexture(baseSizeX, baseSizeY);
+    state.smoothScrollY = 0;
+    state.cursTilePos = (iVec2){ 15,0 };
+    state.mapRendTex = LoadRenderTexture(state.baseSizeX, state.baseSizeY);
+    state.uiRendTex = LoadRenderTexture(state.baseSizeX, state.baseSizeY);
 
-    RenderParams renderParams = { baseSizeX ,baseSizeY,map.width,map.height,tileSize,smoothScrollY,scale };
+    state.renderParams = (RenderParams){ state.baseSizeX ,state.baseSizeY,state.map.width,state.map.height,state.tileSize,state.smoothScrollY,state.scale };
 
-    bool movingWagon = false;
+    state.movingWagon = 0;
 
-    //iVec2 wagonTilePos = ;
+    state.WagonEnt = (WagonEntity){ (struct iVec2) { 15,0 },(struct Vector2) { 15.0f,0.0f },(struct iVec2) { 15,0 },0, 0.01f };
+    //int path[12];
+    state.pathsize = 0;
+    state.movePathIdx = 0;
+    state.totalPathCost = 0;
 
-    WagonEntity WagonEnt = { (struct iVec2) { 15,0 },(struct Vector2) { 15.0f,0.0f },(struct iVec2) { 15,0 },0, 0.01f };
-    int path[12];
-    int pathsize = 0;
-    int movePathIdx = 0;
-    int totalPathCost = 0;
+    state.mapData = LoadFileData("respitetest.rspb", &state.mapDataSize);
+    state.mapSizeX = state.mapData[0];
+    state.mapSizeY = state.mapData[1];
 
-    unsigned int mapDataSize;
-    unsigned char* mapData = LoadFileData("respitetest.rspb", &mapDataSize);
-    int mapSizeX = mapData[0];
-    int mapSizeY = mapData[1];
-
-    
-
+    #if defined(PLATFORM_WEB)
+        emscripten_set_main_loop(UpdateDrawFrame, 60, 1);
+    #else
+        SetTargetFPS(60); 
     // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
-    {
-        // Update
-        //----------------------------------------------------------------------------------
-        // TODO: Update your variables here
-        //----------------------------------------------------------------------------------
-        if (IsKeyReleased(KEY_RIGHT)) cursTilePos.x += 1;
-        if (IsKeyReleased(KEY_LEFT)) cursTilePos.x -= 1;
-        if (IsKeyReleased(KEY_UP)) cursTilePos.y += 1;
-        if (IsKeyReleased(KEY_DOWN)) cursTilePos.y -= 1;
-
-        if (IsKeyReleased(KEY_LEFT_BRACKET)) fontSize -= 1;
-        if (IsKeyReleased(KEY_RIGHT_BRACKET)) fontSize += 1;
-
-        if (cursTilePos.y < 0) cursTilePos.y = 0;
-        if (cursTilePos.y >= mapSizeY) cursTilePos.y = mapSizeY-1;
-        if (cursTilePos.x < 0) cursTilePos.x = 0;
-        if (cursTilePos.x >= mapSizeX) cursTilePos.x = mapSizeX - 1;
-
-        int ScrollLockHigh = WagonEnt.wagonTilePos.y * tileSize * scale;
-        int ScrollLockLow = ScrollLockHigh - (baseSizeY - tileSize - 1) * scale;
-
-        if (IsKeyDown(KEY_W) && smoothScrollY <= (map.height - baseSizeY + 1)*scale && smoothScrollY< ScrollLockHigh) smoothScrollY += 1;
-        if (IsKeyDown(KEY_S) && smoothScrollY>0 && smoothScrollY > ScrollLockLow) smoothScrollY -= 1;
-
-
-        renderParams.smoothScrollY = smoothScrollY;
-
-
-        if (movingWagon) {
-            pathsize = findAsPath(WagonEnt.wagonTilePos, cursTilePos, mapData, path, 12);
-            totalPathCost = 0;
-            for (int i = 0; i < pathsize; i++) {
-                unsigned int dataPos = 2 + path[i] * 4;
-                unsigned int tileData;
-                memcpy(&tileData, mapData + dataPos, 4);
-                totalPathCost += calcTileMoveCost(tileData);
-            }
-        }
-
-        if (IsKeyReleased(KEY_ENTER)) {
-            if (movingWagon) {
-                WagonEnt.wagonTargetTilePos = mapIdxToXY(path[0],mapSizeX);
-                movingWagon = false;
-            }
-            else {
-                int res = memcmp(&WagonEnt.wagonTilePos, &cursTilePos,sizeof(iVec2));
-                if (res == 0) {
-                    movingWagon = true;
-                }
-            }
-        }
-         
-        if (movingWagon == false && (movePathIdx < pathsize)) {
-            if (moveWagon(&WagonEnt)) {
-                movePathIdx += 1;
-                if (movePathIdx == pathsize) {
-                    movePathIdx = 0;
-                    pathsize = 0;
-                }
-                else {
-                    WagonEnt.wagonTargetTilePos = mapIdxToXY(path[movePathIdx], mapSizeX);
-                }
-            };
-        }
-
-
-        unsigned int tileData = getTileData(cursTilePos.x, cursTilePos.y, mapData);
-
-
-
-
-        // Draw
-        //----------------------------------------------------------------------------------
-        BeginDrawing();
-
-        ClearBackground(RAYWHITE);
-
-        
-
-        BeginTextureMode(mapRendTex);
-
-        ClearBackground(RAYWHITE);
-
-        int scrollOffset = (smoothScrollY / scale);
-
-        int mapRenderOffset = -(map.height - mapRendTex.texture.height);
-
-        DrawTexture(map, 0, mapRenderOffset + scrollOffset, WHITE);
-
-        //drawDebugGrid(renderParams);
-
-        int centOff = (cursorRec.width - tileSize) / 2;
-        iVec2 cursPixel = mapTileXYtoScreenXY(cursTilePos.x, cursTilePos.y, renderParams);
-
-
-        iVec2 wagPixel = mapTileXYtoScreenXY(WagonEnt.wagonWorldPos.x, WagonEnt.wagonWorldPos.y, renderParams); //this is awkward, consider changing to tilepos and having the tilepos update in the move func
-
-
-        if (pathsize) {
-            for (int i = movePathIdx; i < pathsize; i++) {
-
-                int nextTile = i + 1;
-                if (nextTile >= pathsize) nextTile = -1;
-                int prevTile = i - 1;
-                if (prevTile < 0) prevTile = -1;
-
-                int north = 0b0000000000001000;
-                int east =  0b0000000000000100;
-                int west =  0b0000000000000010;
-                int south = 0b0000000000000001;
-
-                int neighbors = 0;
-                if (nextTile > 0 && prevTile >= 0) { //drawing a path tile, not a start or end
-                    if (path[i] + mapSizeX == path[nextTile] || path[i] + mapSizeX == path[prevTile]) { //tile to the north
-                        neighbors |= north;
-                    }
-                    if (path[i] + 1 == path[nextTile] || path[i] + 1 == path[prevTile]) { //tile to the east
-                        neighbors |= east;
-                    }
-                    if (path[i] - 1 == path[nextTile] || path[i] - 1 == path[prevTile]) { //tile to the west
-                        neighbors |= west;
-                    }
-                    if (path[i] - mapSizeX == path[nextTile] || path[i] - mapSizeX == path[prevTile]) { //tile to the south
-                        neighbors |= south;
-                    }
-                }
-
-                int drawtileID = 0; //start/end tile
-
-                if (neighbors == (north | south)) {
-                    drawtileID = 1;
-                }
-                else if (neighbors == (east | west)) {
-                    drawtileID = 2;
-                }
-                else if (neighbors == (north | west)) {
-                    drawtileID = 3;
-                }
-                else if (neighbors == (south | east)) {
-                    drawtileID = 4;
-                }
-                else if (neighbors == (south | west)) {
-                    drawtileID = 5;
-                }
-                else if (neighbors == (north | east)) {
-                    drawtileID = 6;
-                }
-                else {
-                    drawtileID = -1;
-                }
-
-                Rectangle pathTileSrc = { drawtileID * tileSize, 2 * tileSize, tileSize,tileSize };
-
-                
-                
-                iVec2 tileLoc = mapIdxToXY(path[i], mapSizeX);
-                iVec2 pathPos = mapTileXYtoScreenXY(tileLoc.x, tileLoc.y, renderParams);
-
-                unsigned int tileData = getTileData(tileLoc.x, tileLoc.y, mapData);
-                int tileMoveCost = calcTileMoveCost(tileData);
-
-                //DrawRectangle(pathPos.x, pathPos.y, tileSize, tileSize, ColorAlpha(RED, ((float)tileMoveCost-2.0f)/8.0f));
-                DrawTextureRec(ui, pathTileSrc, (struct Vector2) { pathPos.x, pathPos.y }, WHITE);
-
-                char str[2];
-                sprintf_s(str, 2, "%i", tileMoveCost);
-                //DrawText(str, pathPos.x, pathPos.y, 6, RED);
-
-                
-            }
-        }
-
-
-        renderWagon(WagonEnt, renderParams, wagonAni);
-        
-
-        DrawTextureRec(ui, cursorRec, (struct Vector2) { cursPixel.x - centOff, cursPixel.y - centOff }, WHITE);
-
-        
-
-        EndTextureMode();
-
-
-        BeginTextureMode(uiRendTex);
-
-            int windowX = mapSizeX * tileSize;
-            int windowY = 0;
-            int windowSizeX = 120;
-            int windowSizeY = baseSizeY;
-
-            renderTileInfoWindow(ui,windowX,windowY,windowSizeX,windowSizeY,tileData);
-
-        //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
-        EndTextureMode();
-
-
-        Rectangle mapRendTexSrc = { 0, 0, mapRendTex.texture.width, -mapRendTex.texture.height };
-        DrawTexturePro(mapRendTex.texture, mapRendTexSrc,(struct Rectangle) { 0, -scale+smoothScrollY%scale, baseSizeX* scale, baseSizeY* scale}, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
-        
-        Rectangle uiRendTexSrc = { 0, 0, uiRendTex.texture.width, -uiRendTex.texture.height };
-        DrawTexturePro(uiRendTex.texture, uiRendTexSrc, (struct Rectangle) { 0, 0, baseSizeX* scale, baseSizeY* scale}, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
-
-        
-        
-        //renderTileInfoDebug(map.width* scale + (tileSize * scale), tileSize* scale , tileData);
-
-
-        
-        
-        char str[3];
-        sprintf_s(str, 3, "%i", totalPathCost);
-        DrawText(str, 10, 10, 32, RED);
-        
-
-        EndDrawing();
-        //----------------------------------------------------------------------------------
+    while (!WindowShouldClose()){   
+        UpdateDrawFrame(&state);
     }
-
+    #endif
     // De-Initialization
     //--------------------------------------------------------------------------------------
     CloseWindow();        // Close window and OpenGL context

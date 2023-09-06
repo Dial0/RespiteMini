@@ -74,3 +74,5 @@ RespiteMini/x64/Debug/RespiteMini.tlog/link.read.1.tlog
 RespiteMini/x64/Debug/RespiteMini.tlog/link.write.1.tlog
 RespiteMini/x64/Debug/RespiteMini.tlog/RespiteMini.lastbuildstate
 *.vsidx
+RespiteMini/YourGame
+RespiteMini/.vscode/tasks.json
