@@ -399,6 +399,80 @@ int renderTileInfo(Texture2D ui,int posX, int posY, int tileId, int level) {
     }
 }
 
+void renderTileInfoWindow(Texture2D ui, int windowX, int windowY, int windowSizeX, int windowSizeY, unsigned int tileData) {
+    int edgeSpacing = 8;
+
+    renderUiWindow(ui,windowX,windowY,windowSizeX,windowSizeY);
+    
+    int tileInfoY = windowX + edgeSpacing + 32;
+    int tileInfoSpacing = 36;
+
+    int terrainFlags = 0b0000000111101110;
+
+    int tileTerrains = tileData & terrainFlags;
+
+    int numTerrains = 0;
+    for (int i = 0; i < 32; i++) {
+        if((tileTerrains >> i) & 0b0000000000000001) numTerrains += 1;
+    }
+
+    int terrainLevel = 0;
+
+    if(numTerrains >= 3) {
+        terrainLevel = 1;
+    } else if (numTerrains == 2) {
+        terrainLevel = 2;
+    } else {
+        terrainLevel = 3;
+    }
+
+    if (tSWAMP & tileData) {
+        renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,0,terrainLevel);
+        tileInfoY += tileInfoSpacing;
+    }
+
+    if (tDESERT & tileData) {
+        renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,1,terrainLevel);
+        tileInfoY += tileInfoSpacing;
+    }
+    if (tBARREN & tileData) {
+        renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,2,terrainLevel);
+        tileInfoY += tileInfoSpacing;
+    }
+    if (tSWAMP_WATER & tileData) {
+
+    }
+    if (tLIGHT_GRASS & tileData) {
+        renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,3,terrainLevel);
+        tileInfoY += tileInfoSpacing;
+    }
+    if (tDARK_GRASS & tileData) {
+        renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,4,terrainLevel);
+        tileInfoY += tileInfoSpacing;
+    }
+    if (tSNOW & tileData) {
+        renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,5,terrainLevel);
+        tileInfoY += tileInfoSpacing;
+    }
+    if (tTUNDRA & tileData) {
+        renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,6,terrainLevel);
+        tileInfoY += tileInfoSpacing;
+    }
+    if (tCLIFFS_MOUNT & tileData) {
+
+    }
+    if (tWATER & tileData) {
+
+    }
+    if (tTREES & tileData) {
+        renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,7,terrainLevel);
+        tileInfoY += tileInfoSpacing;
+    }
+    if (tBRIDGE_HOUSE & tileData) {
+
+    }
+}
+
 unsigned int getTileData(unsigned char x, unsigned char y, unsigned char* mapData) {
     unsigned char width = mapData[0];
     unsigned char height = mapData[1];
@@ -860,82 +934,12 @@ int main(void)
 
         BeginTextureMode(uiRendTex);
 
-        int windowX = mapSizeX * tileSize;
-        int windowY = 0;
-        int windowSizeX = 120;
-        int windowSizeY = baseSizeY;
-        int edgeSpacing = 8;
+            int windowX = mapSizeX * tileSize;
+            int windowY = 0;
+            int windowSizeX = 120;
+            int windowSizeY = baseSizeY;
 
-        renderUiWindow(ui,windowX,windowY,windowSizeX,windowSizeY);
-        
-        int tileInfoY = windowX + edgeSpacing + 32;
-        int tileInfoSpacing = 36;
-
-        int terrainFlags = 0b0000000111101110;
-
-        int tileTerrains = tileData & terrainFlags;
-
-        int numTerrains = 0;
-        for (int i = 0; i < 32; i++) {
-            if((tileTerrains >> i) & 0b0000000000000001) numTerrains += 1;
-        }
-
-        int terrainLevel = 0;
-
-        if(numTerrains >= 3) {
-            terrainLevel = 1;
-        } else if (numTerrains == 2) {
-            terrainLevel = 2;
-        } else {
-            terrainLevel = 3;
-        }
-
-        if (tSWAMP & tileData) {
-            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,0,terrainLevel);
-            tileInfoY += tileInfoSpacing;
-        }
-
-        if (tDESERT & tileData) {
-            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,1,terrainLevel);
-            tileInfoY += tileInfoSpacing;
-        }
-        if (tBARREN & tileData) {
-            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,2,terrainLevel);
-            tileInfoY += tileInfoSpacing;
-        }
-        if (tSWAMP_WATER & tileData) {
-
-        }
-        if (tLIGHT_GRASS & tileData) {
-            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,3,terrainLevel);
-            tileInfoY += tileInfoSpacing;
-        }
-        if (tDARK_GRASS & tileData) {
-            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,4,terrainLevel);
-            tileInfoY += tileInfoSpacing;
-        }
-        if (tSNOW & tileData) {
-            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,5,terrainLevel);
-            tileInfoY += tileInfoSpacing;
-        }
-        if (tTUNDRA & tileData) {
-            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,6,terrainLevel);
-            tileInfoY += tileInfoSpacing;
-        }
-        if (tCLIFFS_MOUNT & tileData) {
-
-        }
-        if (tWATER & tileData) {
-
-        }
-        if (tTREES & tileData) {
-            renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,7,terrainLevel);
-            tileInfoY += tileInfoSpacing;
-        }
-        if (tBRIDGE_HOUSE & tileData) {
-
-        }
-        
+            renderTileInfoWindow(ui,windowX,windowY,windowSizeX,windowSizeY,tileData);
 
         //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
         EndTextureMode();
