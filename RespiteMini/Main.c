@@ -285,7 +285,7 @@ int calcTileMoveCost(unsigned int tileData) {
     return moveCost;
 }
 
-void renderTileInfo(int x, int y, unsigned int tileData) {
+void renderTileInfoDebug(int x, int y, unsigned int tileData) {
     int textYHeight = y;
     int textHeight = 32;
     int textSpacing = 4;
@@ -601,8 +601,8 @@ int main(void)
 
     int smoothScrollY = 0;
     iVec2 cursTilePos = { 15,0 };
-    RenderTexture2D gameRendRex = LoadRenderTexture(baseSizeX, baseSizeY);
-    RenderTexture2D gameRendRexTemp = LoadRenderTexture(baseSizeX, baseSizeY);
+    RenderTexture2D mapRendTex = LoadRenderTexture(baseSizeX, baseSizeY);
+    RenderTexture2D uiRendTex = LoadRenderTexture(baseSizeX, baseSizeY);
 
     RenderParams renderParams = { baseSizeX ,baseSizeY,map.width,map.height,tileSize,smoothScrollY,scale };
 
@@ -704,13 +704,13 @@ int main(void)
 
         
 
-        BeginTextureMode(gameRendRex);
+        BeginTextureMode(mapRendTex);
 
         ClearBackground(RAYWHITE);
 
         int scrollOffset = (smoothScrollY / scale);
 
-        int mapRenderOffset = -(map.height - gameRendRex.texture.height);
+        int mapRenderOffset = -(map.height - mapRendTex.texture.height);
 
         DrawTexture(map, 0, mapRenderOffset + scrollOffset, WHITE);
 
@@ -808,20 +808,66 @@ int main(void)
         EndTextureMode();
 
 
-        BeginTextureMode(gameRendRexTemp);
-        //DrawTexture(gameRendRex.texture, 0,0, WHITE);
-        //Rectangle source = { 0, 0, gameRendRex.texture.width, -gameRendRex.texture.height };
-        //DrawTextureRec(gameRendRex.texture, source, (Vector2) { 0, 0 }, WHITE);
+        BeginTextureMode(uiRendTex);
+
+        int cornerTileSize = 16;
+        int windowX = mapSizeX * tileSize;
+        int windowY = 0;
+        int windowSizeX = 120;
+        int windowSizeY = baseSizeY;
+
+        Rectangle topLeftSrc = { 128,0,16,16 };
+        Rectangle topRightSrc = { 160,0,16,16 };
+        Rectangle bottomLeftSrc = { 128,32,16,16 };
+        Rectangle bottomRightSrc = { 160,32,16,16 };
+
+        Vector2 topLeft = { windowX ,windowY};
+        Vector2 topRight = { windowX + windowSizeX - cornerTileSize,windowY };
+        Vector2 bottomLeft = { windowX, windowY + windowSizeY - cornerTileSize };
+        Vector2 bottomRight = { windowX + windowSizeX - cornerTileSize, windowY + windowSizeY - cornerTileSize };
+
+        Rectangle topBarSrc = { 144,0,16,16 };
+        Rectangle bottomBarSrc = { 144,32,16,16 };
+        Rectangle leftBarSrc = { 128,16,16,16 };
+        Rectangle rightBarSrc = { 160,16,16,16 };
+
+        Rectangle topBar = { windowX + cornerTileSize,windowY, windowSizeX - (cornerTileSize * 2),cornerTileSize };
+        Rectangle bottomBar = { windowX + cornerTileSize,windowY + windowSizeY - cornerTileSize, windowSizeX - (cornerTileSize * 2),cornerTileSize };
+        Rectangle leftBar = { windowX,windowY + cornerTileSize, cornerTileSize,windowSizeY - (cornerTileSize * 2) };
+        Rectangle rightBar = { windowX + windowSizeX - cornerTileSize,windowY + cornerTileSize,cornerTileSize ,windowSizeY - (cornerTileSize * 2) };
+
+        Rectangle centerSrc = { 144,16,16,16 };
+
+        Rectangle center = { windowX + cornerTileSize,windowY + cornerTileSize, windowSizeX - (cornerTileSize * 2),windowSizeY- (cornerTileSize * 2) };
+
+        DrawTextureRec(ui, topLeftSrc, topLeft, WHITE);
+        DrawTextureRec(ui, topRightSrc, topRight, WHITE);
+        DrawTextureRec(ui, bottomLeftSrc, bottomLeft, WHITE);
+        DrawTextureRec(ui, bottomRightSrc, bottomRight, WHITE);
+
+        DrawTexturePro(ui, topBarSrc, topBar, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+        DrawTexturePro(ui, bottomBarSrc, bottomBar, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+        DrawTexturePro(ui, leftBarSrc, leftBar, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+        DrawTexturePro(ui, rightBarSrc, rightBar, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+
+        DrawTexturePro(ui, centerSrc, center, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+
+
+        
+
+        //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
         EndTextureMode();
 
 
-        Rectangle source = { 0, 0, gameRendRex.texture.width, -gameRendRex.texture.height };
-        DrawTexturePro(gameRendRex.texture, source,(struct Rectangle) { 0, -scale+smoothScrollY%scale, baseSizeX* scale, baseSizeY* scale
-        }, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
-
-        DrawTextEx(font, "test", (struct Vector2) { 20, 20 }, fontSize*scale, 1, RED);
+        Rectangle mapRendTexSrc = { 0, 0, mapRendTex.texture.width, -mapRendTex.texture.height };
+        DrawTexturePro(mapRendTex.texture, mapRendTexSrc,(struct Rectangle) { 0, -scale+smoothScrollY%scale, baseSizeX* scale, baseSizeY* scale}, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
         
-        renderTileInfo(map.width*scale + 10, 10, tileData);
+        Rectangle uiRendTexSrc = { 0, 0, uiRendTex.texture.width, -uiRendTex.texture.height };
+        DrawTexturePro(uiRendTex.texture, uiRendTexSrc, (struct Rectangle) { 0, 0, baseSizeX* scale, baseSizeY* scale}, (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+
+        
+        
+        renderTileInfoDebug(map.width* scale + (tileSize * scale), tileSize* scale , tileData);
 
 
         
