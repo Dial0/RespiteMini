@@ -945,7 +945,7 @@ int main(void)
     state.tileSize = 16;
     state.baseSizeX = 600;
     state.baseSizeY = 230;
-    state.scale = 1;
+    state.scale = 2;
     // Initialization
     //--------------------------------------------------------------------------------------
     state.screenWidth = state.baseSizeX* state.scale;
