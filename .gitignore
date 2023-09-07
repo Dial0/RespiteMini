@@ -76,3 +76,4 @@ RespiteMini/x64/Debug/RespiteMini.tlog/RespiteMini.lastbuildstate
 *.vsidx
 RespiteMini/YourGame
 RespiteMini/.vscode/tasks.json
+.DS_Store

@@ -12,6 +12,8 @@
 #define tTREES          0b0000100000000000
 #define tBRIDGE_HOUSE   0b0001000000000000
 
+//#define sprintf_s(buf, ...) snprintf((buf), sizeof(buf), __VA_ARGS__)
+
 #include "raylib.h"
 #include "raymath.h"
 
@@ -355,9 +357,9 @@ void renderTileInfoDebug(int x, int y, unsigned int tileData) {
 
     char str[80];
 
-    sprintf_s(str,80, "Move Cost: %i", tileMoveCost);
+    //sprintf_s(str,80, "Move Cost: %i", tileMoveCost);
     
-    DrawText(str, x, textYHeight, textHeight, RED);
+    //DrawText(str, x, textYHeight, textHeight, RED);
     textYHeight += textHeight + textSpacing;
 
     if (tSWAMP & tileData) {
@@ -410,7 +412,7 @@ void renderTileInfoDebug(int x, int y, unsigned int tileData) {
     }
 }
 
-int renderTileInfo(Texture2D ui,int posX, int posY, int tileId, int level) {
+void renderTileInfo(Texture2D ui,int posX, int posY, int tileId, int level) {
     Rectangle iconSrc = { tileId*32,64,32,32 };
     DrawTextureRec(ui, iconSrc,(struct Vector2) { posX, posY}, WHITE);
 
@@ -450,7 +452,7 @@ void renderTileInfoWindow(Texture2D ui, int windowX, int windowY, int windowSize
 
     renderUiWindow(ui,windowX,windowY,windowSizeX,windowSizeY);
     
-    int tileInfoY = windowX + edgeSpacing + 32;
+    int tileInfoY = windowY + edgeSpacing + 32;
     int tileInfoSpacing = 36;
 
     int terrainFlags = 0b0000000111101110;
@@ -493,6 +495,7 @@ void renderTileInfoWindow(Texture2D ui, int windowX, int windowY, int windowSize
         tileInfoY += tileInfoSpacing;
     }
     if (tDARK_GRASS & tileData) {
+        LOG("grass");
         renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,4,terrainLevel);
         tileInfoY += tileInfoSpacing;
     }
@@ -745,7 +748,7 @@ void UpdateDrawFrame(void* v_state){
 
     state->renderParams.smoothScrollY = state->smoothScrollY;
 
-
+    LOG("\ntest1\n");
     if (state->movingWagon) {
         state->pathsize = findAsPath(state->WagonEnt.wagonTilePos, state->cursTilePos, state->mapData, state->path, 12);
         state->totalPathCost = 0;
@@ -787,7 +790,7 @@ void UpdateDrawFrame(void* v_state){
     unsigned int tileData = getTileData(state->cursTilePos.x, state->cursTilePos.y, state->mapData);
 
 
-
+    LOG("\ntest2\n");
 
     // Draw
     //----------------------------------------------------------------------------------
@@ -883,13 +886,14 @@ void UpdateDrawFrame(void* v_state){
             DrawTextureRec(state->ui, pathTileSrc, (struct Vector2) { pathPos.x, pathPos.y }, WHITE);
 
             char str[2];
-            sprintf_s(str, 2, "%i", tileMoveCost);
+            //sprintf_s(str, 2, "%i", tileMoveCost);
             //DrawText(str, pathPos.x, pathPos.y, 6, RED);
 
             
         }
     }
 
+    LOG("\ntest3\n");
 
     renderWagon(state->WagonEnt, state->renderParams, state->wagonAni);
     
@@ -899,7 +903,7 @@ void UpdateDrawFrame(void* v_state){
     
 
     EndTextureMode();
-
+    LOG("\ntest4\n");
 
     BeginTextureMode(state->uiRendTex);
 
@@ -913,7 +917,7 @@ void UpdateDrawFrame(void* v_state){
     //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
     EndTextureMode();
 
-
+    LOG("\ntest5\n");
     Rectangle mapRendTexSrc = { 0, 0, state->mapRendTex.texture.width, -state->mapRendTex.texture.height };
     DrawTexturePro(state->mapRendTex.texture, mapRendTexSrc,
         (struct Rectangle) { 0, -state->scale+state->smoothScrollY%state->scale, state->baseSizeX* state->scale, state->baseSizeY* state->scale},
@@ -929,24 +933,25 @@ void UpdateDrawFrame(void* v_state){
     //renderTileInfoDebug(map.width* scale + (tileSize * scale), tileSize* scale , tileData);
 
 
-    
+    LOG("\ntest6\n");
     
     char str[3];
-    sprintf_s(str, 3, "%i", state->totalPathCost);
-    DrawText(str, 10, 10, 32, RED);
+    //sprintf_s(str, 3, "%i", state->totalPathCost);
+    //DrawText(str, 10, 10, 32, RED);
     
 
     EndDrawing();
     //----------------------------------------------------------------------------------
+    LOG("\ntest7\n");
 }
 
 int main(void)
 {
 
-    
-    #if !defined(_DEBUG)
-        SetTraceLogLevel(LOG_NONE);         // Disable raylib trace log messsages
-    #endif
+    SaveFileData("test.txt", "test", 5);
+    //#if !defined(_DEBUG)
+    //    SetTraceLogLevel(LOG_NONE);         // Disable raylib trace log messsages
+   // #endif
 
     State state;
 
@@ -963,9 +968,9 @@ int main(void)
 
     SetWindowState(FLAG_WINDOW_RESIZABLE);
 
-    state.map = LoadTexture("C:\\Users\\Ethan\\OneDrive - FabDepot\\game stuff\\Mini Respite\\respiteTestMap.png");
-    state.ui = LoadTexture("C:\\Users\\Ethan\\OneDrive - FabDepot\\game stuff\\Mini Respite\\ui.png");
-    state.wagon = LoadTexture("C:\\Users\\Ethan\\OneDrive - FabDepot\\game stuff\\Mini Respite\\wagon.png");
+    state.map = LoadTexture("respiteTestMap.png");
+    state.ui = LoadTexture("ui.png");
+    state.wagon = LoadTexture("wagon.png");
 
     //global
     font = LoadFontEx("rainyhearts.ttf",fontSize,NULL,0);
@@ -1021,13 +1026,14 @@ int main(void)
     state.mapSizeY = state.mapData[1];
 
     
-
+    
     #if defined(PLATFORM_WEB)
         emscripten_set_main_loop(UpdateDrawFrame, 60, 1);
-    #else
+    #else 
         SetTargetFPS(60); 
     // Main game loop
-    while (!WindowShouldClose()){   
+    while (!WindowShouldClose()){
+         
         UpdateDrawFrame(&state);
     }
     #endif
