@@ -107,7 +107,7 @@ typedef struct State {
     int movePathIdx;
     int totalPathCost;
 
-    unsigned int mapDataSize;
+    int mapDataSize;
     unsigned char* mapData;
     int mapSizeX;
     int mapSizeY;
@@ -152,10 +152,6 @@ void drawDebugGrid(RenderParams param) {
             }
         }
     }
-}
-
-void calculatePath(iVec2 start, iVec2 end) {
-    iVec2 inter = { start.x, end.y };
 }
 
 int moveWagon(WagonEntity* wagon) {
@@ -495,7 +491,6 @@ void renderTileInfoWindow(Texture2D ui, int windowX, int windowY, int windowSize
         tileInfoY += tileInfoSpacing;
     }
     if (tDARK_GRASS & tileData) {
-        LOG("grass");
         renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,4,terrainLevel);
         tileInfoY += tileInfoSpacing;
     }
@@ -748,7 +743,6 @@ void UpdateDrawFrame(void* v_state){
 
     state->renderParams.smoothScrollY = state->smoothScrollY;
 
-    LOG("\ntest1\n");
     if (state->movingWagon) {
         state->pathsize = findAsPath(state->WagonEnt.wagonTilePos, state->cursTilePos, state->mapData, state->path, 12);
         state->totalPathCost = 0;
@@ -789,8 +783,6 @@ void UpdateDrawFrame(void* v_state){
 
     unsigned int tileData = getTileData(state->cursTilePos.x, state->cursTilePos.y, state->mapData);
 
-
-    LOG("\ntest2\n");
 
     // Draw
     //----------------------------------------------------------------------------------
@@ -893,7 +885,6 @@ void UpdateDrawFrame(void* v_state){
         }
     }
 
-    LOG("\ntest3\n");
 
     renderWagon(state->WagonEnt, state->renderParams, state->wagonAni);
     
@@ -903,7 +894,6 @@ void UpdateDrawFrame(void* v_state){
     
 
     EndTextureMode();
-    LOG("\ntest4\n");
 
     BeginTextureMode(state->uiRendTex);
 
@@ -917,7 +907,6 @@ void UpdateDrawFrame(void* v_state){
     //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
     EndTextureMode();
 
-    LOG("\ntest5\n");
     Rectangle mapRendTexSrc = { 0, 0, state->mapRendTex.texture.width, -state->mapRendTex.texture.height };
     DrawTexturePro(state->mapRendTex.texture, mapRendTexSrc,
         (struct Rectangle) { 0, -state->scale+state->smoothScrollY%state->scale, state->baseSizeX* state->scale, state->baseSizeY* state->scale},
@@ -933,7 +922,6 @@ void UpdateDrawFrame(void* v_state){
     //renderTileInfoDebug(map.width* scale + (tileSize * scale), tileSize* scale , tileData);
 
 
-    LOG("\ntest6\n");
     
     char str[3];
     //sprintf_s(str, 3, "%i", state->totalPathCost);
@@ -942,7 +930,6 @@ void UpdateDrawFrame(void* v_state){
 
     EndDrawing();
     //----------------------------------------------------------------------------------
-    LOG("\ntest7\n");
 }
 
 int main(void)
@@ -958,7 +945,7 @@ int main(void)
     state.tileSize = 16;
     state.baseSizeX = 600;
     state.baseSizeY = 230;
-    state.scale = 4;
+    state.scale = 1;
     // Initialization
     //--------------------------------------------------------------------------------------
     state.screenWidth = state.baseSizeX* state.scale;
