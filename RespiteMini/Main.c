@@ -968,12 +968,12 @@ int main(void)
 
     SetWindowState(FLAG_WINDOW_RESIZABLE);
 
-    state.map = LoadTexture("respiteTestMap.png");
-    state.ui = LoadTexture("ui.png");
-    state.wagon = LoadTexture("wagon.png");
+    state.map = LoadTexture("resources/respiteTestMap.png");
+    state.ui = LoadTexture("resources/ui.png");
+    state.wagon = LoadTexture("resources/wagon.png");
 
     //global
-    font = LoadFontEx("rainyhearts.ttf",fontSize,NULL,0);
+    font = LoadFontEx("resources/rainyhearts.ttf",fontSize,NULL,0);
     SetTextureFilter(font.texture, TEXTURE_FILTER_POINT);
 
 
@@ -1021,7 +1021,7 @@ int main(void)
     state.movePathIdx = 0;
     state.totalPathCost = 0;
 
-    state.mapData = LoadFileData("respitetest.rspb", &state.mapDataSize);
+    state.mapData = LoadFileData("resources/respitetest.rspb", &state.mapDataSize);
     state.mapSizeX = state.mapData[0];
     state.mapSizeY = state.mapData[1];
 
