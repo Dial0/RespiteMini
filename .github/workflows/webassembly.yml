@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - 'src/**'
       - '.github/workflows/webassembly.yml'
   release:
     types: [published]
@@ -14,7 +15,7 @@ jobs:
     
     env:
       PROJECT_NAME: ${{ github.event.repository.name }}
-      PROJECT_BUILD_PATH: ${{ github.event.repository.name }}
+      PROJECT_BUILD_PATH: ${{ github.event.repository.name }}\\RespiteMini
       PROJECT_RELEASE_PATH: ${{ github.event.repository.name }}_dev_wasm
       PROJECT_SOURCES: Main.c
       BUILD_WEB_SHELL: minshell.html
@@ -56,8 +57,8 @@ jobs:
 
     - name: Build Product
       run: |
-        cd ${{ env.PROJECT_NAME }}
-        make PLATFORM=PLATFORM_WEB BUILD_MODE=RELEASE EMSDK_PATH="D:/a/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}/emsdk-cache/emsdk-main" PROJECT_SOURCE_FILES=${{ env.PROJECT_SOURCES }} PROJECT_BUILD_PATH=. RAYLIB_PATH=../raylib -B
+        cd ${{ env.PROJECT_NAME }}/RespiteMini
+        make PLATFORM=PLATFORM_WEB BUILD_MODE=RELEASE EMSDK_PATH="D:/a/${{ env.PROJECT_NAME }}/${{ env.PROJECT_NAME }}/emsdk-cache/emsdk-main" PROJECT_SOURCE_FILES=${{ env.PROJECT_SOURCES }} PROJECT_BUILD_PATH=. RAYLIB_PATH=../../raylib -B
   
     - name: Generate Artifacts
       run: |
