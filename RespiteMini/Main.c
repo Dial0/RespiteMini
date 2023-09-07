@@ -956,7 +956,7 @@ int main(void)
     SetWindowState(FLAG_WINDOW_RESIZABLE);
 
     state.map = LoadTexture("resources/respiteTestMap.png");
-    state.ui = LoadTexture("resources/ui.png");
+    state.ui = LoadTexture("resources/UI.png");
     state.wagon = LoadTexture("resources/wagon.png");
 
     //global
