@@ -731,9 +731,6 @@ void UpdateDrawFrame(void* v_state){
     if (IsKeyReleased(KEY_UP)) state->cursTilePos.y += 1;
     if (IsKeyReleased(KEY_DOWN)) state->cursTilePos.y -= 1;
 
-    if (IsKeyReleased(KEY_LEFT_BRACKET)) fontSize -= 1;
-    if (IsKeyReleased(KEY_RIGHT_BRACKET)) fontSize += 1;
-
     if (state->cursTilePos.y < 0) state->cursTilePos.y = 0;
     if (state->cursTilePos.y >= state->mapSizeY) state->cursTilePos.y = state->mapSizeY-1;
     if (state->cursTilePos.x < 0) state->cursTilePos.x = 0;
@@ -1022,6 +1019,8 @@ int main(void)
     state.mapData = LoadFileData("respitetest.rspb", &state.mapDataSize);
     state.mapSizeX = state.mapData[0];
     state.mapSizeY = state.mapData[1];
+
+    
 
     #if defined(PLATFORM_WEB)
         emscripten_set_main_loop(UpdateDrawFrame, 60, 1);
