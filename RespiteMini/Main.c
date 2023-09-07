@@ -432,7 +432,7 @@ void renderTileInfo(Texture2D ui,int posX, int posY, int tileId, int level) {
         tileName = "Snow";
     } else if (tileId == 6) {
         tileName = "Tundra";
-    } else if (tileId == 7) {
+    } else {
         tileName = "Forrest";
     }
     
@@ -948,7 +948,7 @@ void UpdateDrawFrame(void* v_state){
 int main(void)
 {
 
-    SaveFileData("test.txt", "test", 5);
+    //SaveFileData("test.txt", "test", 5);
     //#if !defined(_DEBUG)
     //    SetTraceLogLevel(LOG_NONE);         // Disable raylib trace log messsages
    // #endif
