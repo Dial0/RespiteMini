@@ -886,7 +886,7 @@ TileResources calcTileResources(unsigned int tileData) {
     resources.minerals /= divider;
     resources.soil /= divider;
     resources.town /= divider;
-
+    return resources;
 }
 
 void UpdateDrawFrame(void* v_state){
