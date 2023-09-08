@@ -736,147 +736,156 @@ TileResources calcTileResources(unsigned int tileData) {
     if (tSWAMP & tileData) {
         divider += 1;
 
-        resources.water = 1;
-        resources.wood = 1;
-        resources.animals = 0;
-        resources.fish = 1;
-        resources.plants = 1;
-        resources.minerals = 0;
-        resources.soil = 1;
-        resources.town = 0;
+        resources.water += 1;
+        resources.wood += 1;
+        resources.animals += 0;
+        resources.fish += 1;
+        resources.plants += 1;
+        resources.minerals += 0;
+        resources.soil += 1;
+        resources.town += 0;
     }
     if (tDESERT & tileData) {
         divider += 1;
 
-        resources.water = 1;
-        resources.wood = 1;
-        resources.animals = 0;
-        resources.fish = 1;
-        resources.plants = 1;
-        resources.minerals = 0;
-        resources.soil = 1;
-        resources.town = 0;
+        resources.water += 0;
+        resources.wood += 0;
+        resources.animals += 0;
+        resources.fish += 0;
+        resources.plants += 1;
+        resources.minerals += 1;
+        resources.soil += 0;
+        resources.town += 0;
     }
     if (tBARREN & tileData) {
         divider += 1;
 
-        resources.water = 1;
-        resources.wood = 1;
-        resources.animals = 0;
-        resources.fish = 1;
-        resources.plants = 1;
-        resources.minerals = 0;
-        resources.soil = 1;
-        resources.town = 0;
+        resources.water += 1;
+        resources.wood += 1;
+        resources.animals += 0;
+        resources.fish += 0;
+        resources.plants += 1;
+        resources.minerals += 3;
+        resources.soil += 1;
+        resources.town += 0;
     }
     if (tSWAMP_WATER & tileData) {
         divider += 1;
 
-        resources.water = 1;
-        resources.wood = 1;
-        resources.animals = 0;
-        resources.fish = 1;
-        resources.plants = 1;
-        resources.minerals = 0;
-        resources.soil = 1;
-        resources.town = 0;
+        resources.water += 2;
+        resources.wood += 0;
+        resources.animals += 0;
+        resources.fish += 1;
+        resources.plants += 1;
+        resources.minerals += 0;
+        resources.soil += 1;
+        resources.town += 0;
     }
     if (tLIGHT_GRASS & tileData) {
         divider += 1;
 
-        resources.water = 1;
-        resources.wood = 1;
-        resources.animals = 0;
-        resources.fish = 1;
-        resources.plants = 1;
-        resources.minerals = 0;
-        resources.soil = 1;
-        resources.town = 0;
+        resources.water += 0;
+        resources.wood += 1;
+        resources.animals += 2;
+        resources.fish += 0;
+        resources.plants += 1;
+        resources.minerals += 1;
+        resources.soil += 1;
+        resources.town += 0;
     }
     if (tDARK_GRASS & tileData) {
         divider += 1;
 
-        resources.water = 1;
-        resources.wood = 1;
-        resources.animals = 0;
-        resources.fish = 1;
-        resources.plants = 1;
-        resources.minerals = 0;
-        resources.soil = 1;
-        resources.town = 0;
+        resources.water += 2;
+        resources.wood += 2;
+        resources.animals += 3;
+        resources.fish += 0;
+        resources.plants += 2;
+        resources.minerals += 1;
+        resources.soil += 3;
+        resources.town += 0;
     }
     if (tSNOW & tileData) {
         divider += 1;
 
-        resources.water = 1;
-        resources.wood = 1;
-        resources.animals = 0;
-        resources.fish = 1;
-        resources.plants = 1;
-        resources.minerals = 0;
-        resources.soil = 1;
-        resources.town = 0;
+        resources.water += 1;
+        resources.wood += 1;
+        resources.animals += 1;
+        resources.fish += 0;
+        resources.plants += 1;
+        resources.minerals += 1;
+        resources.soil += 0;
+        resources.town += 0;
     }
     if (tTUNDRA & tileData) {
         divider += 1;
 
-        resources.water = 1;
-        resources.wood = 1;
-        resources.animals = 0;
-        resources.fish = 1;
-        resources.plants = 1;
-        resources.minerals = 0;
-        resources.soil = 1;
-        resources.town = 0;
+        resources.water += 1;
+        resources.wood += 1;
+        resources.animals += 0;
+        resources.fish += 1;
+        resources.plants += 1;
+        resources.minerals += 0;
+        resources.soil += 1;
+        resources.town += 0;
     }
     if (tCLIFFS_MOUNT & tileData) {
         divider += 1;
 
-        resources.water = 1;
-        resources.wood = 1;
-        resources.animals = 0;
-        resources.fish = 1;
-        resources.plants = 1;
-        resources.minerals = 0;
-        resources.soil = 1;
-        resources.town = 0;
+        resources.water += 1;
+        resources.wood += 1;
+        resources.animals += 1;
+        resources.fish += 0;
+        resources.plants += 1;
+        resources.minerals += 3;
+        resources.soil += 1;
+        resources.town += 0;
     }
     if (tWATER & tileData) {
         divider += 1;
 
-        resources.water = 1;
-        resources.wood = 1;
-        resources.animals = 0;
-        resources.fish = 1;
-        resources.plants = 1;
-        resources.minerals = 0;
-        resources.soil = 1;
-        resources.town = 0;      
+        resources.water += 3;
+        resources.wood += 0;
+        resources.animals += 0;
+        resources.fish += 3;
+        resources.plants += 2;
+        resources.minerals += 0;
+        resources.soil += 2;
+        resources.town += 0;     
     }
     if (tTREES & tileData) {
         divider += 1;
 
-        resources.water = 1;
-        resources.wood = 1;
-        resources.animals = 0;
-        resources.fish = 1;
-        resources.plants = 1;
-        resources.minerals = 0;
-        resources.soil = 1;
-        resources.town = 0;
+        resources.water += 0;
+        resources.wood += 3;
+        resources.animals += 3;
+        resources.fish += 0;
+        resources.plants += 3;
+        resources.minerals += 1;
+        resources.soil += 1;
+        resources.town += 0;
     }
     if (tBRIDGE_HOUSE & tileData) {
         divider += 1;
 
-        resources.water = 1;
-        resources.wood = 1;
-        resources.animals = 0;
-        resources.fish = 1;
-        resources.plants = 1;
-        resources.minerals = 0;
-        resources.soil = 1;
-        resources.town = 0;
+        resources.water += 0;
+        resources.wood += 0;
+        resources.animals += 0;
+        resources.fish += 0;
+        resources.plants += 0;
+        resources.minerals += 0;
+        resources.soil += 0;
+        resources.town += 3;
     }
+
+    resources.water /= divider;
+    resources.wood /= divider;
+    resources.animals /= divider;
+    resources.fish /= divider;
+    resources.plants /= divider;
+    resources.minerals /= divider;
+    resources.soil /= divider;
+    resources.town /= divider;
 
 }
 
