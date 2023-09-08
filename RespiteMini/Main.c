@@ -113,6 +113,16 @@ typedef struct State {
     int mapSizeY;
 }State;
 
+typedef struct TileResources {
+    char water;
+    char wood;
+    char animals;
+    char fish;
+    char plants;
+    char minerals;
+    char soil;
+    char town;
+} TileResources;
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -718,6 +728,157 @@ int findAsPath(iVec2 startTile, iVec2 endTile, unsigned char* mapData, int* path
     return 0;
 }
 
+TileResources calcTileResources(unsigned int tileData) {
+
+    TileResources resources = {0};
+    int divider = 1;
+
+    if (tSWAMP & tileData) {
+        divider += 1;
+
+        resources.water = 1;
+        resources.wood = 1;
+        resources.animals = 0;
+        resources.fish = 1;
+        resources.plants = 1;
+        resources.minerals = 0;
+        resources.soil = 1;
+        resources.town = 0;
+    }
+    if (tDESERT & tileData) {
+        divider += 1;
+
+        resources.water = 1;
+        resources.wood = 1;
+        resources.animals = 0;
+        resources.fish = 1;
+        resources.plants = 1;
+        resources.minerals = 0;
+        resources.soil = 1;
+        resources.town = 0;
+    }
+    if (tBARREN & tileData) {
+        divider += 1;
+
+        resources.water = 1;
+        resources.wood = 1;
+        resources.animals = 0;
+        resources.fish = 1;
+        resources.plants = 1;
+        resources.minerals = 0;
+        resources.soil = 1;
+        resources.town = 0;
+    }
+    if (tSWAMP_WATER & tileData) {
+        divider += 1;
+
+        resources.water = 1;
+        resources.wood = 1;
+        resources.animals = 0;
+        resources.fish = 1;
+        resources.plants = 1;
+        resources.minerals = 0;
+        resources.soil = 1;
+        resources.town = 0;
+    }
+    if (tLIGHT_GRASS & tileData) {
+        divider += 1;
+
+        resources.water = 1;
+        resources.wood = 1;
+        resources.animals = 0;
+        resources.fish = 1;
+        resources.plants = 1;
+        resources.minerals = 0;
+        resources.soil = 1;
+        resources.town = 0;
+    }
+    if (tDARK_GRASS & tileData) {
+        divider += 1;
+
+        resources.water = 1;
+        resources.wood = 1;
+        resources.animals = 0;
+        resources.fish = 1;
+        resources.plants = 1;
+        resources.minerals = 0;
+        resources.soil = 1;
+        resources.town = 0;
+    }
+    if (tSNOW & tileData) {
+        divider += 1;
+
+        resources.water = 1;
+        resources.wood = 1;
+        resources.animals = 0;
+        resources.fish = 1;
+        resources.plants = 1;
+        resources.minerals = 0;
+        resources.soil = 1;
+        resources.town = 0;
+    }
+    if (tTUNDRA & tileData) {
+        divider += 1;
+
+        resources.water = 1;
+        resources.wood = 1;
+        resources.animals = 0;
+        resources.fish = 1;
+        resources.plants = 1;
+        resources.minerals = 0;
+        resources.soil = 1;
+        resources.town = 0;
+    }
+    if (tCLIFFS_MOUNT & tileData) {
+        divider += 1;
+
+        resources.water = 1;
+        resources.wood = 1;
+        resources.animals = 0;
+        resources.fish = 1;
+        resources.plants = 1;
+        resources.minerals = 0;
+        resources.soil = 1;
+        resources.town = 0;
+    }
+    if (tWATER & tileData) {
+        divider += 1;
+
+        resources.water = 1;
+        resources.wood = 1;
+        resources.animals = 0;
+        resources.fish = 1;
+        resources.plants = 1;
+        resources.minerals = 0;
+        resources.soil = 1;
+        resources.town = 0;      
+    }
+    if (tTREES & tileData) {
+        divider += 1;
+
+        resources.water = 1;
+        resources.wood = 1;
+        resources.animals = 0;
+        resources.fish = 1;
+        resources.plants = 1;
+        resources.minerals = 0;
+        resources.soil = 1;
+        resources.town = 0;
+    }
+    if (tBRIDGE_HOUSE & tileData) {
+        divider += 1;
+
+        resources.water = 1;
+        resources.wood = 1;
+        resources.animals = 0;
+        resources.fish = 1;
+        resources.plants = 1;
+        resources.minerals = 0;
+        resources.soil = 1;
+        resources.town = 0;
+    }
+
+}
 
 void UpdateDrawFrame(void* v_state){
 
