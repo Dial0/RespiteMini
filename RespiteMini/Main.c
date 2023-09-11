@@ -34,6 +34,11 @@
 #endif
 
 enum MoveDir { North, South, East, West };
+Color colorNormal = { 218, 165, 84, 255 };
+
+Color colorProminent = { 140, 214, 18, 255 };
+Color colorModerate = { 255, 187, 49, 255 };
+Color colorSparse = { 224, 60, 40, 255 };
 
 typedef struct RenderParams {
     int mapViewPortWidth;
@@ -317,7 +322,7 @@ int calcTileMoveCost(unsigned int tileData) {
 TileResources calcTileResources(unsigned int tileData) {
 
     TileResources resources = {0};
-    int divider = 1;
+    int divider = 0;
 
     if (tSWAMP & tileData) {
         divider += 1;
@@ -603,16 +608,53 @@ void renderTileInfo(Texture2D ui,int posX, int posY, int tileId, int level) {
         tileName = "Forrest";
     }
     
-    DrawTextEx(font, tileName, (struct Vector2) { posX + 32 + 2, posY }, fontSize, 1, (Color){218,165,84,255});
+    DrawTextEx(font, tileName, (struct Vector2) { posX + 32 + 2, posY }, fontSize, 1, colorNormal);
 
     if (level == 3) {
-        DrawTextEx(font, "Prominent", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 1, (Color){218,165,84,255});
+        DrawTextEx(font, "Prominent", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 1, colorProminent);
     } else if (level == 2){
-        DrawTextEx(font, "Moderate", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 1, (Color){218,165,84,255});
+        DrawTextEx(font, "Moderate", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 1, colorModerate);
     } else {
-        DrawTextEx(font, "Sparse", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 1, (Color){218,165,84,255});
+        DrawTextEx(font, "Sparse", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 1, colorSparse);
     }
+
+
+
 }
+
+renderTileResourceIcon(Texture2D ui, int posX, int posY, int tileId, int level) {
+
+    int layoutWidth = 4;
+    int layoutStartX = 192;
+    int layoutStartY = 0;
+    int iconSize = 16;
+
+    int iconX = tileId % layoutWidth;
+    int iconY = tileId / layoutWidth;
+    
+    Rectangle iconSrc = { layoutStartX + iconX * iconSize,layoutStartY + iconY * iconSize,iconSize,iconSize };
+    
+    DrawTextureRec(ui, iconSrc, (struct Vector2) { posX, posY }, WHITE);
+
+    if (level == 3) {
+        DrawTextEx(font, "++", (struct Vector2) { posX + iconSize + 2, posY}, fontSize, 1, colorProminent);
+    }
+    else if (level == 2) {
+        DrawTextEx(font, "+", (struct Vector2) { posX + iconSize + 2, posY}, fontSize, 1, colorModerate);
+    }
+    else {
+        DrawTextEx(font, "~", (struct Vector2) { posX + iconSize + 3, posY}, fontSize, 1, colorSparse);
+    }
+
+}
+
+void incrementIcon(int* resourceX, int* resourceY, int iconXspacing, int edgeSpacing, int windowX, int windowSizeX) {
+    *resourceX += iconXspacing;
+    if (*resourceX >= (windowX + windowSizeX - iconXspacing)) {
+        *resourceX = windowX + edgeSpacing;
+        *resourceY += 18;
+    }
+};
 
 void renderTileInfoWindow(Texture2D ui, int windowX, int windowY, int windowSizeX, int windowSizeY, unsigned int tileData) {
     int edgeSpacing = 8;
@@ -693,29 +735,49 @@ void renderTileInfoWindow(Texture2D ui, int windowX, int windowY, int windowSize
     // +  - moderate
     // ++ - plentiful
 
-    if(resources.water){
+    int iconXspacing = 36;
 
+    int resourceX = windowX + edgeSpacing;
+    int resourceHeight = 4;
+    int resourceY = windowSizeY - edgeSpacing - (resourceHeight * 16);
+        
+    
+
+
+
+    if(resources.water){
+        renderTileResourceIcon(ui, resourceX, resourceY, 0, resources.water);
+        incrementIcon(&resourceX, &resourceY, iconXspacing, edgeSpacing, windowX, windowSizeX);
     }
     if(resources.wood){
-
+        renderTileResourceIcon(ui, resourceX, resourceY, 1, resources.wood);
+        incrementIcon(&resourceX, &resourceY, iconXspacing, edgeSpacing, windowX, windowSizeX);
     }
     if(resources.animals){
+        renderTileResourceIcon(ui, resourceX, resourceY, 2, resources.animals);
+        incrementIcon(&resourceX, &resourceY, iconXspacing, edgeSpacing, windowX, windowSizeX);
 
     }
     if(resources.fish){
+        renderTileResourceIcon(ui, resourceX, resourceY, 3, resources.fish);
+        incrementIcon(&resourceX, &resourceY, iconXspacing, edgeSpacing, windowX, windowSizeX);
 
     }
     if(resources.plants){
-
+        renderTileResourceIcon(ui, resourceX, resourceY, 4, resources.plants);
+        incrementIcon(&resourceX, &resourceY, iconXspacing, edgeSpacing, windowX, windowSizeX);
     }
     if(resources.minerals){
-
+        renderTileResourceIcon(ui, resourceX, resourceY, 5, resources.minerals);
+        incrementIcon(&resourceX, &resourceY, iconXspacing, edgeSpacing, windowX, windowSizeX);
     }    
     if(resources.soil){
-
+        renderTileResourceIcon(ui, resourceX, resourceY, 6, resources.soil);
+        incrementIcon(&resourceX, &resourceY, iconXspacing, edgeSpacing, windowX, windowSizeX);
     }
     if(resources.town){
-
+        renderTileResourceIcon(ui, resourceX, resourceY, 7, resources.town);
+        incrementIcon(&resourceX, &resourceY, iconXspacing, edgeSpacing, windowX, windowSizeX);
     }
 }
 
@@ -984,7 +1046,6 @@ void UpdateDrawFrame(void* v_state){
 
 
     unsigned int tileData = getTileData(state->cursTilePos.x, state->cursTilePos.y, state->mapData);
-
 
     // Draw
     //----------------------------------------------------------------------------------
