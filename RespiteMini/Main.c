@@ -1204,6 +1204,8 @@ void UpdateDrawFrame(void* v_state){
 
     BeginTextureMode(state->uiRendTex);
 
+        ClearBackground(RAYWHITE);
+
         int windowX = state->mapSizeX * state->tileSize;
         int windowY = 0;
         int windowSizeX = 120;
