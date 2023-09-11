@@ -1072,7 +1072,7 @@ void UpdateDrawFrame(void* v_state){
 
         int tileData = getTileData(startTile.x,startTile.y,state->mapData);
 
-        int turnAmountTraversed = tileAmountTraversed*calcTileMoveCost(tileData);
+        int turnAmountTraversed = (int)(tileAmountTraversed*(float)calcTileMoveCost(tileData));
 
         if (turnAmountTraversed > state->curTileTurnsTraversed) {
             state->curTurn += 1;
