@@ -1213,7 +1213,7 @@ void UpdateDrawFrame(void* v_state){
 
         char str[10];
         sprintf(str, "%i", state->curTurn);
-        DrawTextEx(font, str, (struct Vector2) { 20,20}, fontSize, 1, colorSparse);
+        DrawTextEx(font, str, (struct Vector2) { 120,120}, fontSize, 1, colorSparse);
 
     //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
     EndTextureMode();
