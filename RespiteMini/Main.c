@@ -628,7 +628,7 @@ void renderTileInfo(Texture2D ui,int posX, int posY, int tileId, int level) {
 
 }
 
-renderTileResourceIcon(Texture2D ui, int posX, int posY, int tileId, int level) {
+void renderTileResourceIcon(Texture2D ui, int posX, int posY, int tileId, int level) {
 
     int layoutWidth = 4;
     int layoutStartX = 192;
@@ -1211,6 +1211,10 @@ void UpdateDrawFrame(void* v_state){
 
         renderTileInfoWindow(state->ui,windowX,windowY,windowSizeX,windowSizeY,tileData);
 
+        char str[10];
+        sprintf(str, "%i", state->curTurn);
+        DrawTextEx(font, str, (struct Vector2) { 20,20}, fontSize, 1, colorSparse);
+
     //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
     EndTextureMode();
 
@@ -1230,7 +1234,7 @@ void UpdateDrawFrame(void* v_state){
 
 
     
-    char str[3];
+    //char str[3];
     //sprintf_s(str, 3, "%i", state->totalPathCost);
     //DrawText(str, 10, 10, 32, RED);
     
