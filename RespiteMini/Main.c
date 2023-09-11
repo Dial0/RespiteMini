@@ -1068,7 +1068,7 @@ void UpdateDrawFrame(void* v_state){
 
         float completedDist = Vector2Distance(worldPos,(Vector2){targetTile.x,targetTile.y});
 
-        float tileAmountTraversed = completedDist/totalDist;
+        float tileAmountTraversed = 1.0f - completedDist;
 
         int tileData = getTileData(startTile.x,startTile.y,state->mapData);
 
