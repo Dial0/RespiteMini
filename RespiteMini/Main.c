@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include<math.h>
 
 #define SUPPORT_LOG_INFO
 #if defined(SUPPORT_LOG_INFO)
@@ -111,11 +112,16 @@ typedef struct State {
     int pathsize;
     int movePathIdx;
     int totalPathCost;
+    int curTileTurnsTraversed;
 
     int mapDataSize;
     unsigned char* mapData;
     int mapSizeX;
     int mapSizeY;
+
+    int curTurn;
+    int prevTurn;
+
 }State;
 
 typedef struct TileResources {
@@ -791,6 +797,11 @@ unsigned int getTileData(unsigned char x, unsigned char y, unsigned char* mapDat
     return tileData;
 }
 
+int mapXYtoIdx(unsigned char x, unsigned char y, unsigned char* mapData){
+    unsigned char width = mapData[0];
+    return y * width + x;
+}
+
 iVec2 mapIdxToXY(int tileIdx, int mapSizeX) {
     int x = tileIdx % mapSizeX;
     int y = tileIdx / mapSizeX;
@@ -1029,7 +1040,9 @@ void UpdateDrawFrame(void* v_state){
             }
         }
     }
-        
+    
+
+
     if (state->movingWagon == false && (state->movePathIdx < state->pathsize)) {
         if (moveWagon(&state->WagonEnt)) {
             state->movePathIdx += 1;
@@ -1039,8 +1052,40 @@ void UpdateDrawFrame(void* v_state){
             }
             else {
                 state->WagonEnt.wagonTargetTilePos = mapIdxToXY(state->path[state->movePathIdx], state->mapSizeX);
+                state->curTileTurnsTraversed = 0;
             }
         };
+
+        //Check if the wagon has moved enough to increment the turn count
+
+        Vector2D worldPos = state->WagonEnt.wagonWorldPos;
+        iVec2 startTile = state->WagonEnt.wagonTilePos;
+        iVec2 targetTile = state->WagonEnt.wagonTargetTilePos;
+
+        int xTotal = (targetTile.x - startTile.x)*(targetTile.x - startTile.x);
+        int yTotal = (targetTile.y - startTile.y)*(targetTile.y - startTile.y);
+        float totalDist = sqrtf(float(x) + float(y));
+
+        float completedDist = Vector2Distance(worldPos,Vector2D(targetTile.x,targetTile.y));
+
+        float tileAmountTraversed = completedDist/totalDist;
+
+        int tileData = getTileData(startTile.x,startTile.y,state->mapData);
+
+        int turnAmountTraversed = tileAmountTraversed*calcTileMoveCost(tileData);
+
+        if (turnAmountTraversed > state->curTileTurnsTraversed) {
+            state->curTurn += 1;
+            state->curTileTurnsTraversed = turnAmountTraversed;
+        }
+
+    }
+
+    if (state->curTurn != state->prevTurn) {
+        state->prevTurn = state->curTurn;
+
+        //do all the updating of things that happen by turn here
+
     }
 
 
@@ -1250,7 +1295,8 @@ int main(void)
         wagonSouth, altWagonSouth,
     };
 
-
+    state.curTurn = 0;
+    state.prevTurn = 0;
     // Set our game frames-per-second
     //--------------------------------------------------------------------------------------
     //ToggleFullscreen();
