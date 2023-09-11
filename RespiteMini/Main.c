@@ -982,7 +982,6 @@ int findAsPath(iVec2 startTile, iVec2 endTile, unsigned char* mapData, int* path
     return 0;
 }
 
-
 void UpdateDrawFrame(void* v_state){
 
     State* state = (State*)v_state;
