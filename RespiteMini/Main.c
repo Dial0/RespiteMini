@@ -992,6 +992,9 @@ int findAsPath(iVec2 startTile, iVec2 endTile, unsigned char* mapData, int* path
 }
 
 void UpdateDrawFrame(void* v_state){
+    
+
+    LOG("test");
 
     State* state = (State*)v_state;
     Rectangle cursorRec = { 0.0f,0.0f,18.0f,18.0f };
@@ -1067,7 +1070,6 @@ void UpdateDrawFrame(void* v_state){
 
         //Check if the wagon has moved enough to increment the turn count
         float completedDist = Vector2Distance(worldPos,(Vector2){targetTile.x,targetTile.y});
-        LOG("test");
         float tileAmountTraversed = 1.0f - completedDist;
 
         int turnAmountTraversed = round(tileAmountTraversed*(float)tileMoveCost);
