@@ -1084,6 +1084,8 @@ void UpdateDrawFrame(void* v_state){
 
         //do all the updating of things that happen each turn here
 
+        //UPDATE mist/darkness
+
     }
 
 
