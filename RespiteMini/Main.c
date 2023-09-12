@@ -624,8 +624,6 @@ void renderTileInfo(Texture2D ui,int posX, int posY, int tileId, int level) {
         DrawTextEx(font, "Sparse", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 1, colorSparse);
     }
 
-
-
 }
 
 void renderTileResourceIcon(Texture2D ui, int posX, int posY, int tileId, int level) {
@@ -1044,6 +1042,16 @@ void UpdateDrawFrame(void* v_state){
 
 
     if (state->movingWagon == false && (state->movePathIdx < state->pathsize)) {
+
+        Vector2 worldPos = state->WagonEnt.wagonWorldPos;
+        iVec2 startTile = state->WagonEnt.wagonTilePos;
+        iVec2 targetTile = state->WagonEnt.wagonTargetTilePos;
+
+        int tileData = getTileData(startTile.x,startTile.y,state->mapData);
+        int tileMoveCost = calcTileMoveCost(tileData);
+
+        state->WagonEnt.moveSpeed = 1/tileMoveCost;
+
         if (moveWagon(&state->WagonEnt)) {
             state->movePathIdx += 1;
             if (state->movePathIdx == state->pathsize) {
@@ -1057,22 +1065,9 @@ void UpdateDrawFrame(void* v_state){
         };
 
         //Check if the wagon has moved enough to increment the turn count
-
-        Vector2 worldPos = state->WagonEnt.wagonWorldPos;
-        iVec2 startTile = state->WagonEnt.wagonTilePos;
-        iVec2 targetTile = state->WagonEnt.wagonTargetTilePos;
-
-        float xTotal = (float)(targetTile.x - startTile.x)*(float)(targetTile.x - startTile.x);
-        float yTotal = (float)(targetTile.y - startTile.y)*(float)(targetTile.y - startTile.y);
-        float totalDist = sqrtf(xTotal + yTotal);
-
-        float completedDist = Vector2Distance(worldPos,(Vector2){targetTile.x,targetTile.y});
-
         float tileAmountTraversed = 1.0f - completedDist;
 
-        int tileData = getTileData(startTile.x,startTile.y,state->mapData);
-
-        int turnAmountTraversed = (int)(tileAmountTraversed*(float)calcTileMoveCost(tileData));
+        int turnAmountTraversed = (int)(tileAmountTraversed*(float)tileMoveCost);
 
         if (turnAmountTraversed > state->curTileTurnsTraversed) {
             state->curTurn += 1;
