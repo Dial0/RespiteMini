@@ -1068,17 +1068,12 @@ void UpdateDrawFrame(void* v_state){
                 state->curTileTurnsTraversed = 0;
                 skip = 1;
             }
-        };
+        }
         if (!skip){
-            //Check if the wagon has moved enough to increment the turn count
             float completedDist = Vector2Distance(worldPos,(Vector2){targetTile.x,targetTile.y});
-            
             float tileAmountTraversed = 1.0f - completedDist;
-
             int turnAmountTraversed = round(tileAmountTraversed*(float)tileMoveCost);
-            LOG("tile turns: %i , %i \n", turnAmountTraversed,state->curTileTurnsTraversed);
             if (turnAmountTraversed > state->curTileTurnsTraversed) {
-                LOG("increment turn");
                 state->curTurn += 1;
                 state->curTileTurnsTraversed = turnAmountTraversed;
             }
