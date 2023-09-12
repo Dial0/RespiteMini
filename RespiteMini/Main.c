@@ -1067,7 +1067,7 @@ void UpdateDrawFrame(void* v_state){
 
         //Check if the wagon has moved enough to increment the turn count
         float completedDist = Vector2Distance(worldPos,(Vector2){targetTile.x,targetTile.y});
-        LOG("completed dist:%f",completedDist);
+        LOG("test");
         float tileAmountTraversed = 1.0f - completedDist;
 
         int turnAmountTraversed = round(tileAmountTraversed*(float)tileMoveCost);
