@@ -1042,16 +1042,17 @@ void UpdateDrawFrame(void* v_state){
 
 
     if (state->movingWagon == false && (state->movePathIdx < state->pathsize)) {
-
+        
         Vector2 worldPos = state->WagonEnt.wagonWorldPos;
         iVec2 startTile = state->WagonEnt.wagonTilePos;
         iVec2 targetTile = state->WagonEnt.wagonTargetTilePos;
 
         int tileData = getTileData(startTile.x,startTile.y,state->mapData);
+
         int tileMoveCost = calcTileMoveCost(tileData);
 
-        state->WagonEnt.moveSpeed = 1/tileMoveCost;
-
+        state->WagonEnt.moveSpeed = 1.0f / tileMoveCost;
+        
         if (moveWagon(&state->WagonEnt)) {
             state->movePathIdx += 1;
             if (state->movePathIdx == state->pathsize) {
@@ -1065,6 +1066,8 @@ void UpdateDrawFrame(void* v_state){
         };
 
         //Check if the wagon has moved enough to increment the turn count
+        float completedDist = Vector2Distance(worldPos,(Vector2){targetTile.x,targetTile.y});
+
         float tileAmountTraversed = 1.0f - completedDist;
 
         int turnAmountTraversed = (int)(tileAmountTraversed*(float)tileMoveCost);
