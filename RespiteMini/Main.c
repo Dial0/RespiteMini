@@ -1051,7 +1051,7 @@ void UpdateDrawFrame(void* v_state){
 
         int tileMoveCost = calcTileMoveCost(tileData);
 
-        state->WagonEnt.moveSpeed = 1.0f / tileMoveCost;
+        state->WagonEnt.moveSpeed = 0.10f / (tileMoveCost*2);
         
         if (moveWagon(&state->WagonEnt)) {
             state->movePathIdx += 1;
@@ -1082,7 +1082,7 @@ void UpdateDrawFrame(void* v_state){
     if (state->curTurn != state->prevTurn) {
         state->prevTurn = state->curTurn;
 
-        //do all the updating of things that happen by turn here
+        //do all the updating of things that happen each turn here
 
     }
 
