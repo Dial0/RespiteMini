@@ -1070,7 +1070,7 @@ void UpdateDrawFrame(void* v_state){
         LOG("completed dist:%f",completedDist);
         float tileAmountTraversed = 1.0f - completedDist;
 
-        float turnAmountTraversed = tileAmountTraversed*(float)tileMoveCost;
+        int turnAmountTraversed = round(tileAmountTraversed*(float)tileMoveCost);
 
         if (turnAmountTraversed > state->curTileTurnsTraversed) {
             state->curTurn += 1;
