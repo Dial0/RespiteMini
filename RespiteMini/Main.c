@@ -1051,7 +1051,7 @@ void UpdateDrawFrame(void* v_state){
 
         int tileMoveCost = calcTileMoveCost(tileData);
 
-        state->WagonEnt.moveSpeed = 0.10f / (tileMoveCost*2);
+        state->WagonEnt.moveSpeed = 0.03f / (tileMoveCost*2);
         
         if (moveWagon(&state->WagonEnt)) {
             state->movePathIdx += 1;
