@@ -993,8 +993,7 @@ int findAsPath(iVec2 startTile, iVec2 endTile, unsigned char* mapData, int* path
 
 void UpdateDrawFrame(void* v_state){
     
-
-    LOG("test");
+   
 
     State* state = (State*)v_state;
     Rectangle cursorRec = { 0.0f,0.0f,18.0f,18.0f };
@@ -1056,6 +1055,8 @@ void UpdateDrawFrame(void* v_state){
 
         state->WagonEnt.moveSpeed = 0.05f / (tileMoveCost*2);
         
+        bool skip = 0;
+
         if (moveWagon(&state->WagonEnt)) {
             state->movePathIdx += 1;
             if (state->movePathIdx == state->pathsize) {
@@ -1065,20 +1066,23 @@ void UpdateDrawFrame(void* v_state){
             else {
                 state->WagonEnt.wagonTargetTilePos = mapIdxToXY(state->path[state->movePathIdx], state->mapSizeX);
                 state->curTileTurnsTraversed = 0;
+                skip = 1;
             }
         };
+        if (!skip){
+            //Check if the wagon has moved enough to increment the turn count
+            float completedDist = Vector2Distance(worldPos,(Vector2){targetTile.x,targetTile.y});
+            
+            float tileAmountTraversed = 1.0f - completedDist;
 
-        //Check if the wagon has moved enough to increment the turn count
-        float completedDist = Vector2Distance(worldPos,(Vector2){targetTile.x,targetTile.y});
-        float tileAmountTraversed = 1.0f - completedDist;
-
-        int turnAmountTraversed = round(tileAmountTraversed*(float)tileMoveCost);
-
-        if (turnAmountTraversed > state->curTileTurnsTraversed) {
-            state->curTurn += 1;
-            state->curTileTurnsTraversed = turnAmountTraversed;
+            int turnAmountTraversed = round(tileAmountTraversed*(float)tileMoveCost);
+            LOG("tile turns: %i , %i \n", turnAmountTraversed,state->curTileTurnsTraversed);
+            if (turnAmountTraversed > state->curTileTurnsTraversed) {
+                LOG("increment turn");
+                state->curTurn += 1;
+                state->curTileTurnsTraversed = turnAmountTraversed;
+            }
         }
-
     }
 
     if (state->curTurn != state->prevTurn) {
@@ -1328,7 +1332,7 @@ int main(void)
     state.mapSizeX = state.mapData[0];
     state.mapSizeY = state.mapData[1];
 
-    
+    state.curTileTurnsTraversed=0;
     
     #if defined(PLATFORM_WEB)
         emscripten_set_main_loop_arg(UpdateDrawFrame, &state, 60, 1);
@@ -1336,7 +1340,6 @@ int main(void)
         SetTargetFPS(60); 
     // Main game loop
     while (!WindowShouldClose()){
-         
         UpdateDrawFrame(&state);
     }
     #endif
