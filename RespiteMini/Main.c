@@ -108,6 +108,8 @@ typedef struct State {
 
     int movingWagon;
     WagonEntity WagonEnt;
+    int wagonFood;
+    int wagonWater;
     int path[12];
     int pathsize;
     int movePathIdx;
@@ -1214,9 +1216,23 @@ void UpdateDrawFrame(void* v_state){
 
         renderTileInfoWindow(state->ui,windowX,windowY,windowSizeX,windowSizeY,tileData);
 
-        char str[10];
-        sprintf(str, "%i", state->curTurn);
-        DrawTextEx(font, str, (struct Vector2) { 120,120}, fontSize, 1, colorSparse);
+        char turns[10]; 
+        sprintf(turns, "%i", state->curTurn);
+
+        char food[10]; 
+        sprintf(food, "%i", state->wagonFood);
+
+        char water[10]; 
+        sprintf(water, "%i", state->wagonWater);
+
+        DrawTextEx(font, "F:", (struct Vector2) { windowX + 8, windowY +8}, fontSize, 1, colorNormal);
+        DrawTextEx(font, food, (struct Vector2) { windowX + 24, windowY +8}, fontSize, 1, colorNormal);
+
+        DrawTextEx(font, "W:", (struct Vector2) { windowX + 8, windowY +20}, fontSize, 1, colorNormal);
+        DrawTextEx(font, water, (struct Vector2) { windowX + 24, windowY +20}, fontSize, 1, colorNormal);
+
+        DrawTextEx(font, "T:", (struct Vector2) { windowX + 64, windowY +8}, fontSize, 1, colorNormal);
+        DrawTextEx(font, turns, (struct Vector2) { windowX + 80, windowY +8}, fontSize, 1, colorNormal);
 
     //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
     EndTextureMode();
@@ -1328,6 +1344,9 @@ int main(void)
     state.mapSizeY = state.mapData[1];
 
     state.curTileTurnsTraversed=0;
+
+    state.wagonFood = 100;
+    state.wagonWater = 100;
     
     #if defined(PLATFORM_WEB)
         emscripten_set_main_loop_arg(UpdateDrawFrame, &state, 60, 1);
