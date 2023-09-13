@@ -110,6 +110,7 @@ typedef struct State {
     WagonEntity WagonEnt;
     int wagonFood;
     int wagonWater;
+    int wagonHealth;
     int path[12];
     int pathsize;
     int movePathIdx;
@@ -667,7 +668,7 @@ void renderTileInfoWindow(Texture2D ui, int windowX, int windowY, int windowSize
 
     renderUiWindow(ui,windowX,windowY,windowSizeX,windowSizeY);
     
-    int tileInfoY = windowY + edgeSpacing + 32;
+    int tileInfoY = windowY + edgeSpacing + 40;
     int tileInfoSpacing = 36;
 
     int terrainFlags = 0b0000000111101110;
@@ -1225,14 +1226,31 @@ void UpdateDrawFrame(void* v_state){
         char water[10]; 
         sprintf(water, "%i", state->wagonWater);
 
-        DrawTextEx(font, "F:", (struct Vector2) { windowX + 8, windowY +8}, fontSize, 1, colorNormal);
-        DrawTextEx(font, food, (struct Vector2) { windowX + 24, windowY +8}, fontSize, 1, colorNormal);
+        char health[10]; 
+        sprintf(health, "%i", state->wagonHealth);
 
-        DrawTextEx(font, "W:", (struct Vector2) { windowX + 8, windowY +20}, fontSize, 1, colorNormal);
-        DrawTextEx(font, water, (struct Vector2) { windowX + 24, windowY +20}, fontSize, 1, colorNormal);
+        Rectangle statIcons = {48,0,16,16}; 
 
-        DrawTextEx(font, "T:", (struct Vector2) { windowX + 64, windowY +8}, fontSize, 1, colorNormal);
-        DrawTextEx(font, turns, (struct Vector2) { windowX + 80, windowY +8}, fontSize, 1, colorNormal);
+        //Water
+        DrawTextureRec(state->ui, statIcons, (struct Vector2) { windowX + 8, windowY +8}, WHITE);
+        DrawTextEx(font, water, (struct Vector2) { windowX + 25, windowY +8}, fontSize, 1, colorNormal);
+        statIcons.x += 16;
+
+        //Food
+        DrawTextureRec(state->ui, statIcons, (struct Vector2) { windowX + 8, windowY +26}, WHITE);
+        DrawTextEx(font, food, (struct Vector2) { windowX + 25, windowY +26}, fontSize, 1, colorNormal);
+        statIcons.x += 16;
+
+        //Turns
+        DrawTextureRec(state->ui, statIcons, (struct Vector2) { windowX + 64, windowY +8}, WHITE);
+        DrawTextEx(font, turns, (struct Vector2) { windowX + 81, windowY +8}, fontSize, 1, colorNormal);
+        statIcons.x += 16;
+
+        //Health
+        DrawTextureRec(state->ui, statIcons, (struct Vector2) { windowX + 64, windowY +26}, WHITE); 
+        DrawTextEx(font, health, (struct Vector2) { windowX + 81, windowY +26}, fontSize, 1, colorNormal);
+
+
 
     //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
     EndTextureMode();
@@ -1347,6 +1365,7 @@ int main(void)
 
     state.wagonFood = 100;
     state.wagonWater = 100;
+    state.wagonHealth = 100;
     
     #if defined(PLATFORM_WEB)
         emscripten_set_main_loop_arg(UpdateDrawFrame, &state, 60, 1);
