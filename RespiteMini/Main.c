@@ -963,10 +963,16 @@ int findAsPath(iVec2 startTile, iVec2 endTile, unsigned char* mapData, int* path
 
 
             unsigned int dataPos = 2 + curNode * 4;
-            unsigned int tileData;
-            memcpy(&tileData, mapData + dataPos, 4);
+            unsigned int curTileData;
+            memcpy(&curTileData, mapData + dataPos, 4);
 
-            int tentative_gScore = gScore[curNode] + calcTileMoveCost(tileData);
+            dataPos = 2 + neighIdx * 4;
+            unsigned int neighTileData;
+            memcpy(&neighTileData, mapData + dataPos, 4);
+
+            int edgeCost = (calcTileMoveCost(curTileData) + calcTileMoveCost(neighTileData)) /2;
+
+            int tentative_gScore = gScore[curNode] + edgeCost;
             int curNeigh_gScore = gScore[neighIdx];
 
             if ((tentative_gScore < curNeigh_gScore) || curNeigh_gScore == -1) {
@@ -1054,12 +1060,20 @@ void UpdateDrawFrame(void* v_state){
         iVec2 startTile = state->WagonEnt.wagonTilePos;
         iVec2 targetTile = state->WagonEnt.wagonTargetTilePos;
 
-        int tileData = getTileData(startTile.x,startTile.y,state->mapData);
+        int curTileData = getTileData(startTile.x,startTile.y,state->mapData);
+        int tarTileData = getTileData(targetTile.x,targetTile.y,state->mapData);
 
-        int tileMoveCost = calcTileMoveCost(tileData);
+        int tileMoveCost = (calcTileMoveCost(curTileData) + calcTileMoveCost(tarTileData))/2;
 
-        state->WagonEnt.moveSpeed = 0.05f / (tileMoveCost*2);
-        
+        float completedDist = Vector2Distance(worldPos,(Vector2){targetTile.x,targetTile.y});
+
+        if (completedDist >= 0.5) {
+             state->WagonEnt.moveSpeed = 0.05f / (calcTileMoveCost(curTileData)*2);
+        }
+        else {
+            state->WagonEnt.moveSpeed = 0.05f / (calcTileMoveCost(tarTileData)*2);
+        }
+
         bool skip = 0;
 
         if (moveWagon(&state->WagonEnt)) {
@@ -1075,7 +1089,6 @@ void UpdateDrawFrame(void* v_state){
             }
         }
         if (!skip){
-            float completedDist = Vector2Distance(worldPos,(Vector2){targetTile.x,targetTile.y});
             float tileAmountTraversed = 1.0f - completedDist;
             int turnAmountTraversed = round(tileAmountTraversed*(float)tileMoveCost);
             if (turnAmountTraversed > state->curTileTurnsTraversed) {
@@ -1155,7 +1168,7 @@ void UpdateDrawFrame(void* v_state){
             unsigned int darkTileData;
             memcpy(&darkTileData, state->mapData + dataPos, 4);
             int darkTileMoveCost = calcTileMoveCost(darkTileData) * state->darknessCostMulti;
-            int color = ((float)darknessLevel/(float)darkTileMoveCost)*255.0f;
+            int color = ((float)darknessLevel/(float)darkTileMoveCost)*200.0f;
             DrawRectangle(darknessPixel.x,darknessPixel.y,state->renderParams.tileSize,state->renderParams.tileSize,(Color){0,0,0,color});
         }
     }
