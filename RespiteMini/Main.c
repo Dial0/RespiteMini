@@ -121,6 +121,8 @@ typedef struct State {
     unsigned char* mapData;
     int mapSizeX;
     int mapSizeY;
+    int* darknessMap;
+    int darknessCostMulti;
 
     int curTurn;
     int prevTurn;
@@ -850,7 +852,7 @@ int getNeighbour(int tileIdx, int dir, int mapSizeX, int mapSizeY) {
 
     if (dir == 3) {
         //South
-        if (i - mapSizeX > 0) {
+        if (i - mapSizeX >= 0) {
             return i - mapSizeX;
         }
         else {
@@ -1085,6 +1087,37 @@ void UpdateDrawFrame(void* v_state){
 
     if (state->curTurn != state->prevTurn) {
         state->prevTurn = state->curTurn;
+        LOG("TURN\n");
+        if (state->curTurn > 20) { //dont start the darkness creep till we are past turn 20
+
+            for (int i = 0; i < (state->mapSizeX*state->mapSizeY); i++) {
+                unsigned int dataPos = 2 + i * 4;
+                unsigned int tileData;
+                memcpy(&tileData, state->mapData + dataPos, 4);
+
+                if(i < state->mapSizeX && state->darknessMap[i] < (calcTileMoveCost(tileData)*state->darknessCostMulti)) {
+                    state->darknessMap[i] += 1;
+                    continue;
+                }
+
+                for (int dir = 0; dir < 4; dir++) {
+                    int neighbour = getNeighbour(i,dir,state->mapSizeX,state->mapSizeY);
+                    if (neighbour == -1){continue;}
+                    unsigned int dataPos = 2 + neighbour * 4;
+                    unsigned int neighbourTileData;
+                    memcpy(&neighbourTileData, state->mapData + dataPos, 4);
+
+                    if (state->darknessMap[neighbour] == (calcTileMoveCost(neighbourTileData)*state->darknessCostMulti)
+                        && state->darknessMap[i] < (calcTileMoveCost(tileData)*state->darknessCostMulti)) {
+                        state->darknessMap[i] += 1;
+                        break;
+                    }
+                }
+                
+
+            }
+            
+        }
 
         //do all the updating of things that happen each turn here
 
@@ -1112,6 +1145,21 @@ void UpdateDrawFrame(void* v_state){
     int mapRenderOffset = -(state->map.height - state->mapRendTex.texture.height);
 
     DrawTexture(state->map, 0, mapRenderOffset + scrollOffset, WHITE);
+
+    for (int i = 0; i < (state->mapSizeX*state->mapSizeY); i++) {
+        int darknessLevel = state->darknessMap[i];
+        if (darknessLevel) {
+            iVec2 darknessTileLoc = mapIdxToXY(i,state->mapSizeX);
+            iVec2 darknessPixel = mapTileXYtoScreenXY(darknessTileLoc.x,darknessTileLoc.y,state->renderParams);
+            unsigned int dataPos = 2 + i * 4;
+            unsigned int darkTileData;
+            memcpy(&darkTileData, state->mapData + dataPos, 4);
+            int darkTileMoveCost = calcTileMoveCost(darkTileData) * state->darknessCostMulti;
+            int color = ((float)darknessLevel/(float)darkTileMoveCost)*255.0f;
+            DrawRectangle(darknessPixel.x,darknessPixel.y,state->renderParams.tileSize,state->renderParams.tileSize,(Color){0,0,0,color});
+        }
+    }
+    
 
     //drawDebugGrid(renderParams);
 
@@ -1311,8 +1359,6 @@ int main(void)
     font = LoadFontEx("resources/rainyhearts.ttf",fontSize,NULL,0);
     SetTextureFilter(font.texture, TEXTURE_FILTER_POINT);
 
-
-
     Rectangle wagonNorth = {0.0f,0.0f,16.0f,16.0f };
     Rectangle altWagonNorth = { 16.0f,0.0f,16.0f,16.0f };
 
@@ -1360,6 +1406,9 @@ int main(void)
     state.mapData = LoadFileData("resources/respitetest.rspb", &state.mapDataSize);
     state.mapSizeX = state.mapData[0];
     state.mapSizeY = state.mapData[1];
+
+    state.darknessMap = calloc(state.mapSizeX * state.mapSizeY, sizeof(int));
+    state.darknessCostMulti = 4;
 
     state.curTileTurnsTraversed=0;
 
