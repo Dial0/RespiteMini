@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "ratio": "c",
+        "__bit_reference": "c",
+        "unordered_map": "c"
+    }
+}

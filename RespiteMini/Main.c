@@ -83,6 +83,33 @@ typedef struct WagonAni {
 
 } WagonAni;
 
+typedef struct Task {
+    int id;
+    int numAssigned;
+    int turnsActive;
+    int turnsRequired;
+}Task;
+
+typedef struct UiTasks{
+    
+    int cursorArea;
+    // -1 inital state 
+    // 0 is the top tabs
+    // 1 is the main tasks
+    // 2 is the Move/EndTurn buttons
+
+    int numTabs;
+    int selectedTab;
+    
+    int numTasks;
+    int selectedTask;
+    Task task[9];
+
+    bool moveSelected;
+    bool endTurnSelected;
+
+} UiTasks;
+
 Font font;
 int fontSize = 15;
 
@@ -90,7 +117,7 @@ typedef struct State {
     int tileSize;
     int baseSizeX;
     int baseSizeY;
-    int scale ;
+    int scale;
     int screenWidth;
     int screenHeight;
 
@@ -107,6 +134,7 @@ typedef struct State {
     RenderParams renderParams;
 
     int movingWagon;
+    bool wagonSelected;
     WagonEntity WagonEnt;
     int wagonFood;
     int wagonWater;
@@ -126,6 +154,9 @@ typedef struct State {
 
     int curTurn;
     int prevTurn;
+
+    bool tasksUiActive;
+    UiTasks tasksUi;
 
 }State;
 
@@ -231,7 +262,6 @@ void renderWagon(WagonEntity wagonEnt, RenderParams renderParams, WagonAni Ani )
     bool alternateAnimation = ((int)wagonEnt.aniFrames / 10) % 2;
 
     if (wagonEnt.aniDir == North) {
-        
         if (alternateAnimation) {
             DrawTextureRec(Ani.Tex, Ani.altNorth, (struct Vector2) { newWagPixel.x, newWagPixel.y }, WHITE);
         }
@@ -266,10 +296,6 @@ void renderWagon(WagonEntity wagonEnt, RenderParams renderParams, WagonAni Ani )
             DrawTextureRec(Ani.Tex, Ani.South, (struct Vector2) { newWagPixel.x, newWagPixel.y }, WHITE);
         }
     }
-
-
-
-
 }
 
 int calcTileMoveCost(unsigned int tileData) {
@@ -1008,11 +1034,62 @@ void UpdateDrawFrame(void* v_state){
 
     State* state = (State*)v_state;
     Rectangle cursorRec = { 0.0f,0.0f,18.0f,18.0f };
+    if(state->tasksUiActive) {
 
-    if (IsKeyReleased(KEY_RIGHT)) state->cursTilePos.x += 1;
-    if (IsKeyReleased(KEY_LEFT)) state->cursTilePos.x -= 1;
-    if (IsKeyReleased(KEY_UP)) state->cursTilePos.y += 1;
-    if (IsKeyReleased(KEY_DOWN)) state->cursTilePos.y -= 1;
+        if (IsKeyReleased(KEY_RIGHT)) {
+
+            if ((state->tasksUi.cursorArea == 0) && state->tasksUi.selectedTab < 2){
+                state->tasksUi.selectedTab += 1;
+            }
+
+            if ((state->tasksUi.cursorArea == 1) && ((state->tasksUi.selectedTask+1) % 3 != 0)){
+                state->tasksUi.selectedTask += 1;
+            }
+        }
+
+        if (IsKeyReleased(KEY_LEFT)){
+
+            if ((state->tasksUi.cursorArea == 0) && state->tasksUi.selectedTab > 0){
+                state->tasksUi.selectedTab -= 1;
+            }
+
+            if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.selectedTask) % 3 != 0){
+                state->tasksUi.selectedTask -= 1;
+            }
+        }
+        
+        if (IsKeyReleased(KEY_UP)) {
+            if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.selectedTask) >= 3) {
+                state->tasksUi.selectedTask -= 3;
+            } else {
+                //state->cusorArea == 0;
+            }
+        }
+        
+        if (IsKeyReleased(KEY_DOWN)) {
+
+            if (state->tasksUi.cursorArea == 0){
+                state->tasksUi.cursorArea = 1;
+                state->tasksUi.selectedTask = state->tasksUi.selectedTab;
+                if (state->tasksUi.selectedTask >= state->tasksUi.numTasks) {
+                    state->tasksUi.selectedTask = state->tasksUi.numTasks-1;
+                }
+            }
+
+            if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.numTasks) > (state->tasksUi.selectedTask + 3)) {
+                state->tasksUi.selectedTask += 3;
+            } else {
+                //state->cusorArea == 0;
+            }
+        }
+
+    } else {
+        if (IsKeyReleased(KEY_RIGHT)) state->cursTilePos.x += 1;
+        if (IsKeyReleased(KEY_LEFT)) state->cursTilePos.x -= 1;
+        if (IsKeyReleased(KEY_UP)) state->cursTilePos.y += 1;
+        if (IsKeyReleased(KEY_DOWN)) state->cursTilePos.y -= 1;
+    }
+
 
     if (state->cursTilePos.y < 0) state->cursTilePos.y = 0;
     if (state->cursTilePos.y >= state->mapSizeY) state->cursTilePos.y = state->mapSizeY-1;
@@ -1024,6 +1101,61 @@ void UpdateDrawFrame(void* v_state){
 
     if (IsKeyDown(KEY_W) && state->smoothScrollY <= (state->map.height - state->baseSizeY + 1)*state->scale && state->smoothScrollY< ScrollLockHigh) state->smoothScrollY += 1;
     if (IsKeyDown(KEY_S) && state->smoothScrollY>0 && state->smoothScrollY > ScrollLockLow) state->smoothScrollY -= 1;
+
+
+    if (IsKeyReleased(KEY_U)) {
+        if (state->tasksUiActive) {
+            state->tasksUiActive = 0;
+            state->tasksUi.cursorArea = -1;
+        } else {
+            state->tasksUiActive = 1;
+        }
+    }
+
+
+    if(state->tasksUiActive && state->tasksUi.cursorArea == -1){ //we just opened the menu, so we need to initalise it
+            
+        int curTileData = getTileData(state->WagonEnt.wagonTilePos.x,state->WagonEnt.wagonTilePos.y,state->mapData);
+        TileResources curTileRes = calcTileResources(curTileData);
+        state->tasksUi.numTabs = 3;
+        state->tasksUi.selectedTab = 0;
+
+        state->tasksUi.cursorArea = 1;
+
+        state->tasksUi.numTasks = 0;
+        if (curTileRes.water) {
+            state->tasksUi.task[state->tasksUi.numTasks].id = 1;
+            state->tasksUi.numTasks += 1;
+        }
+        if (curTileRes.wood) {
+            state->tasksUi.task[state->tasksUi.numTasks].id = 2;
+            state->tasksUi.numTasks += 1;
+        }
+        if (curTileRes.animals) {
+            state->tasksUi.task[state->tasksUi.numTasks].id = 3;
+            state->tasksUi.numTasks += 1;
+        }
+        if (curTileRes.fish) {
+            state->tasksUi.task[state->tasksUi.numTasks].id = 4;
+            state->tasksUi.numTasks += 1;
+        }
+        if (curTileRes.plants) {
+            state->tasksUi.task[state->tasksUi.numTasks].id = 5;
+            state->tasksUi.numTasks += 1;
+        }
+        if (curTileRes.minerals) {
+            state->tasksUi.task[state->tasksUi.numTasks].id = 6;
+            state->tasksUi.numTasks += 1;
+        }
+        if (curTileRes.soil) {
+            state->tasksUi.task[state->tasksUi.numTasks].id = 7;
+            state->tasksUi.numTasks += 1;
+        }
+        if (curTileRes.town) {
+            state->tasksUi.task[state->tasksUi.numTasks].id = 8;
+            state->tasksUi.numTasks += 1;
+        }
+    }
 
 
     state->renderParams.smoothScrollY = state->smoothScrollY;
@@ -1045,13 +1177,18 @@ void UpdateDrawFrame(void* v_state){
             state->movingWagon = false;
         }
         else {
-            int res = memcmp(&state->WagonEnt.wagonTilePos, &state->cursTilePos,sizeof(iVec2));
-            if (res == 0) {
+            if (state->WagonEnt.wagonTilePos.x == state->cursTilePos.x 
+                && state->WagonEnt.wagonTilePos.y == state->cursTilePos.y) {
                 state->movingWagon = true;
             }
         }
     }
     
+    if (state->movingWagon
+        && state->WagonEnt.wagonTilePos.x == state->cursTilePos.x
+        && state->WagonEnt.wagonTilePos.y == state->cursTilePos.y) {
+        state->wagonSelected = 1;
+    } else {state->wagonSelected = 0;}
 
 
     if (state->movingWagon == false && (state->movePathIdx < state->pathsize)) {
@@ -1259,11 +1396,14 @@ void UpdateDrawFrame(void* v_state){
 
 
     renderWagon(state->WagonEnt, state->renderParams, state->wagonAni);
-    
 
     DrawTextureRec(state->ui, cursorRec, (struct Vector2) { cursPixel.x - centOff, cursPixel.y - centOff }, WHITE);
 
-    
+    if(state->wagonSelected) {
+        iVec2 wagPixel = mapWorldXYtoScreenXY(state->WagonEnt.wagonWorldPos.x, state->WagonEnt.wagonWorldPos.y, state->renderParams);
+        Rectangle campfireSrc = {16,112,16,16};
+        DrawTextureRec(state->ui, campfireSrc, (struct Vector2) { wagPixel.x+12, wagPixel.y-12 }, WHITE);
+    }
 
     EndTextureMode();
 
@@ -1311,7 +1451,42 @@ void UpdateDrawFrame(void* v_state){
         DrawTextureRec(state->ui, statIcons, (struct Vector2) { windowX + 64, windowY +26}, WHITE); 
         DrawTextEx(font, health, (struct Vector2) { windowX + 81, windowY +26}, fontSize, 1, colorNormal);
 
+        if(state->tasksUiActive){
 
+            int taskWindowX = 40;
+            int taskWindowY = 30;
+            int taskWindowSizeX = 400;
+            int taskWindowSizey = 160;
+            int edgeSpacing = 8;
+
+            renderUiWindow(state->ui,taskWindowX,taskWindowY,taskWindowSizeX,taskWindowSizey);
+
+            int taskListStartX = taskWindowX + edgeSpacing;
+            int taskListStartY = taskWindowY + edgeSpacing;
+
+            int taskItemSpacingX = 120;
+            int taskItemSpacingY = 40;
+            
+
+            for (int i = 0; i < state->tasksUi.numTasks; i++) {
+                if(i != 0 && i%3 == 0) {
+                    taskListStartY += taskItemSpacingY;
+                    taskListStartX = taskWindowX + edgeSpacing;
+                }
+
+                if(state->tasksUi.cursorArea==1 && state->tasksUi.selectedTask==i){
+                    DrawText("task", taskListStartX, taskListStartY, fontSize, RED);
+                } else {
+                    DrawText("task", taskListStartX, taskListStartY, fontSize, colorNormal);
+                }
+                
+                taskListStartX += taskItemSpacingX;
+
+            }
+            
+            
+        }
+        
 
     //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
     EndTextureMode();
@@ -1428,6 +1603,8 @@ int main(void)
     state.wagonFood = 100;
     state.wagonWater = 100;
     state.wagonHealth = 100;
+
+    state.tasksUi.cursorArea = -1;
     
     #if defined(PLATFORM_WEB)
         emscripten_set_main_loop_arg(UpdateDrawFrame, &state, 60, 1);
