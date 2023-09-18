@@ -645,14 +645,14 @@ void renderTileInfo(Texture2D ui,int posX, int posY, int tileId, int level) {
         tileName = "Forrest";
     }
     
-    DrawTextEx(font, tileName, (struct Vector2) { posX + 32 + 2, posY }, fontSize, 1, colorNormal);
+    DrawTextEx(font, tileName, (struct Vector2) { posX + 32 + 2, posY }, fontSize, 0, colorNormal);
 
     if (level == 3) {
-        DrawTextEx(font, "Prominent", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 1, colorProminent);
+        DrawTextEx(font, "Prominent", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 0, colorProminent);
     } else if (level == 2){
-        DrawTextEx(font, "Moderate", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 1, colorModerate);
+        DrawTextEx(font, "Moderate", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 0, colorModerate);
     } else {
-        DrawTextEx(font, "Sparse", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 1, colorSparse);
+        DrawTextEx(font, "Sparse", (struct Vector2) { posX + 32 + 2, posY + fontSize + 2 }, fontSize, 0, colorSparse);
     }
 
 }
@@ -814,6 +814,41 @@ void renderTileInfoWindow(Texture2D ui, int windowX, int windowY, int windowSize
         renderTileResourceIcon(ui, resourceX, resourceY, 7, resources.town);
         incrementIcon(&resourceX, &resourceY, iconXspacing, edgeSpacing, windowX, windowSizeX);
     }
+}
+
+void renderTaskItem(Texture2D ui, int posX, int posY, int taskId, int assigned, int turnsReq, int turnsComplete) {
+    Rectangle taskBoxSrc = { 48,112,120,42 };
+    DrawTextureRec(ui, taskBoxSrc, (struct Vector2) { posX, posY }, WHITE);
+
+    char* taskName;
+
+    if (taskId == 0) {
+        taskName = "Get Water";
+    }
+    else if (taskId == 1) {
+        taskName = "Chop Wood";
+    }
+    else if (taskId == 2) {
+        taskName = "Hunt";
+    }
+    else if (taskId == 3) {
+        taskName = "Fish";
+    }
+    else if (taskId == 4) {
+        taskName = "Get Herbs";
+    }
+    else if (taskId == 5) {
+        taskName = "Mine";
+    }
+    else if (taskId == 6) {
+        taskName = "Farm";
+    }
+    else {
+        taskName = "Recruit";
+    }
+
+    DrawTextEx(font, taskName, (struct Vector2) { posX + 4, posY +4 }, fontSize, 0, colorNormal);
+
 }
 
 unsigned int getTileData(unsigned char x, unsigned char y, unsigned char* mapData) {
@@ -1028,6 +1063,8 @@ int findAsPath(iVec2 startTile, iVec2 endTile, unsigned char* mapData, int* path
     return 0;
 }
 
+
+
 void UpdateDrawFrame(void* v_state){
     
    
@@ -1119,40 +1156,41 @@ void UpdateDrawFrame(void* v_state){
         TileResources curTileRes = calcTileResources(curTileData);
         state->tasksUi.numTabs = 3;
         state->tasksUi.selectedTab = 0;
+        state->tasksUi.selectedTask = 0;
 
         state->tasksUi.cursorArea = 1;
 
         state->tasksUi.numTasks = 0;
         if (curTileRes.water) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 1;
+            state->tasksUi.task[state->tasksUi.numTasks].id = 0;
             state->tasksUi.numTasks += 1;
         }
         if (curTileRes.wood) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 2;
+            state->tasksUi.task[state->tasksUi.numTasks].id = 1;
             state->tasksUi.numTasks += 1;
         }
         if (curTileRes.animals) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 3;
+            state->tasksUi.task[state->tasksUi.numTasks].id = 2;
             state->tasksUi.numTasks += 1;
         }
         if (curTileRes.fish) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 4;
+            state->tasksUi.task[state->tasksUi.numTasks].id = 3;
             state->tasksUi.numTasks += 1;
         }
         if (curTileRes.plants) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 5;
+            state->tasksUi.task[state->tasksUi.numTasks].id = 4;
             state->tasksUi.numTasks += 1;
         }
         if (curTileRes.minerals) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 6;
+            state->tasksUi.task[state->tasksUi.numTasks].id = 5;
             state->tasksUi.numTasks += 1;
         }
         if (curTileRes.soil) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 7;
+            state->tasksUi.task[state->tasksUi.numTasks].id = 6;
             state->tasksUi.numTasks += 1;
         }
         if (curTileRes.town) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 8;
+            state->tasksUi.task[state->tasksUi.numTasks].id = 7;
             state->tasksUi.numTasks += 1;
         }
     }
@@ -1451,21 +1489,21 @@ void UpdateDrawFrame(void* v_state){
         DrawTextureRec(state->ui, statIcons, (struct Vector2) { windowX + 64, windowY +26}, WHITE); 
         DrawTextEx(font, health, (struct Vector2) { windowX + 81, windowY +26}, fontSize, 1, colorNormal);
 
-        if(state->tasksUiActive){
+        if(state->tasksUiActive) {
 
             int taskWindowX = 40;
             int taskWindowY = 30;
             int taskWindowSizeX = 400;
             int taskWindowSizey = 160;
-            int edgeSpacing = 8;
+            int edgeSpacing = 10;
 
             renderUiWindow(state->ui,taskWindowX,taskWindowY,taskWindowSizeX,taskWindowSizey);
 
             int taskListStartX = taskWindowX + edgeSpacing;
             int taskListStartY = taskWindowY + edgeSpacing;
 
-            int taskItemSpacingX = 120;
-            int taskItemSpacingY = 40;
+            int taskItemSpacingX = 130;
+            int taskItemSpacingY = 49;
             
 
             for (int i = 0; i < state->tasksUi.numTasks; i++) {
@@ -1474,10 +1512,13 @@ void UpdateDrawFrame(void* v_state){
                     taskListStartX = taskWindowX + edgeSpacing;
                 }
 
-                if(state->tasksUi.cursorArea==1 && state->tasksUi.selectedTask==i){
-                    DrawText("task", taskListStartX, taskListStartY, fontSize, RED);
+                int taskId = state->tasksUi.task[i].id;
+
+                renderTaskItem(state->ui, taskListStartX, taskListStartY, taskId, 0, 0, 0);
+                if(state->tasksUi.cursorArea==1 && state->tasksUi.selectedTask==i) {
+                    //DrawText("task", taskListStartX, taskListStartY, fontSize, RED);
                 } else {
-                    DrawText("task", taskListStartX, taskListStartY, fontSize, colorNormal);
+                    //DrawText("task", taskListStartX, taskListStartY, fontSize, colorNormal);
                 }
                 
                 taskListStartX += taskItemSpacingX;
