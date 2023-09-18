@@ -40,6 +40,7 @@ Color colorNormal = { 218, 165, 84, 255 };
 Color colorProminent = { 140, 214, 18, 255 };
 Color colorModerate = { 255, 187, 49, 255 };
 Color colorSparse = { 224, 60, 40, 255 };
+Color colorDark = { 82, 51, 39, 255 };
 
 typedef struct RenderParams {
     int mapViewPortWidth;
@@ -1082,6 +1083,11 @@ void UpdateDrawFrame(void* v_state){
             if ((state->tasksUi.cursorArea == 1) && ((state->tasksUi.selectedTask+1) % 3 != 0)){
                 state->tasksUi.selectedTask += 1;
             }
+            
+            if ((state->tasksUi.cursorArea == 2) && state->tasksUi.moveSelected){
+                state->tasksUi.endTurnSelected = 1;
+                state->tasksUi.moveSelected = 0;
+            }
         }
 
         if (IsKeyReleased(KEY_LEFT)){
@@ -1093,13 +1099,23 @@ void UpdateDrawFrame(void* v_state){
             if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.selectedTask) % 3 != 0){
                 state->tasksUi.selectedTask -= 1;
             }
+
+            if ((state->tasksUi.cursorArea == 2) && state->tasksUi.endTurnSelected){
+                state->tasksUi.endTurnSelected = 0;
+                state->tasksUi.moveSelected = 1;
+            }
         }
         
         if (IsKeyReleased(KEY_UP)) {
             if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.selectedTask) >= 3) {
                 state->tasksUi.selectedTask -= 3;
-            } else {
-                //state->cusorArea == 0;
+            }
+
+            if (state->tasksUi.cursorArea == 2) {
+                state->tasksUi.cursorArea = 1;
+                state->tasksUi.selectedTask = state->tasksUi.numTasks-1;
+                state->tasksUi.endTurnSelected = 0;
+                state->tasksUi.moveSelected = 0;
             }
         }
         
@@ -1116,7 +1132,8 @@ void UpdateDrawFrame(void* v_state){
             if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.numTasks) > (state->tasksUi.selectedTask + 3)) {
                 state->tasksUi.selectedTask += 3;
             } else {
-                //state->cusorArea == 0;
+                state->tasksUi.cursorArea = 2;
+                state->tasksUi.moveSelected = 1;
             }
         }
 
@@ -1412,8 +1429,6 @@ void UpdateDrawFrame(void* v_state){
             }
 
             Rectangle pathTileSrc = { drawtileID * state->tileSize, 2 * state->tileSize, state->tileSize,state->tileSize };
-
-            
             
             iVec2 tileLoc = mapIdxToXY(state->path[i], state->mapSizeX);
             iVec2 pathPos = mapTileXYtoScreenXY(tileLoc.x, tileLoc.y, state->renderParams);
@@ -1504,6 +1519,12 @@ void UpdateDrawFrame(void* v_state){
 
             int taskItemSpacingX = 130;
             int taskItemSpacingY = 49;
+
+            //Selection Window
+            Rectangle tl = {0,0,7,8};
+            Rectangle tr = {11,0,7,8};
+            Rectangle bl = {0,10,7,8};
+            Rectangle br = {11,10,7,8};
             
 
             for (int i = 0; i < state->tasksUi.numTasks; i++) {
@@ -1516,16 +1537,47 @@ void UpdateDrawFrame(void* v_state){
 
                 renderTaskItem(state->ui, taskListStartX, taskListStartY, taskId, 0, 0, 0);
                 if(state->tasksUi.cursorArea==1 && state->tasksUi.selectedTask==i) {
-                    //DrawText("task", taskListStartX, taskListStartY, fontSize, RED);
-                } else {
-                    //DrawText("task", taskListStartX, taskListStartY, fontSize, colorNormal);
+                    DrawTextureRec(state->ui, tl, (struct Vector2) { taskListStartX, taskListStartY}, WHITE);
+                    DrawTextureRec(state->ui, tr, (struct Vector2) { taskListStartX + 113, taskListStartY}, WHITE);
+                    DrawTextureRec(state->ui, br, (struct Vector2) { taskListStartX + 113, taskListStartY + 34}, WHITE);
+                    DrawTextureRec(state->ui, bl, (struct Vector2) { taskListStartX, taskListStartY + 34}, WHITE);
                 }
                 
                 taskListStartX += taskItemSpacingX;
 
             }
-            
-            
+
+            Rectangle turn = {185,176,50,17};
+            Rectangle move = {134,176,50,17};
+
+            int turnButtonX = taskWindowX + taskWindowSizeX - 50 - 4;
+            int turnButtonY = taskWindowY + taskWindowSizey+4;
+
+            int moveButtonX = taskWindowX + taskWindowSizeX - 100 - 12;
+            int moveButtonY = taskWindowY + taskWindowSizey+4;
+
+            DrawTextureRec(state->ui, turn, (struct Vector2) { turnButtonX, turnButtonY}, WHITE);
+            DrawTextureRec(state->ui, move, (struct Vector2) { moveButtonX, moveButtonY}, WHITE);
+            DrawTextEx(font, "Turn", (struct Vector2) { turnButtonX + 16, turnButtonY}, fontSize, 0, colorSparse);
+            DrawTextEx(font, "Travel", (struct Vector2) { moveButtonX + 2, moveButtonY}, fontSize, 0, colorDark);
+            Rectangle turnIcon = {83,2,12,12};
+            DrawTextureRec(state->ui, turnIcon, (struct Vector2) { turnButtonX+2, turnButtonY+1}, colorSparse);
+
+            if (state->tasksUi.endTurnSelected) {
+                DrawTextureRec(state->ui, tl, (struct Vector2) { turnButtonX, turnButtonY}, WHITE);
+                DrawTextureRec(state->ui, tr, (struct Vector2) { turnButtonX + 50 - 7, turnButtonY}, WHITE);
+                DrawTextureRec(state->ui, br, (struct Vector2) { turnButtonX + 50 - 7, turnButtonY+17-8}, WHITE);
+                DrawTextureRec(state->ui, bl, (struct Vector2) { turnButtonX, turnButtonY+17-8}, WHITE);
+                
+            }
+
+            if (state->tasksUi.moveSelected) {
+                DrawTextureRec(state->ui, tl, (struct Vector2) { moveButtonX, moveButtonY}, WHITE);
+                DrawTextureRec(state->ui, tr, (struct Vector2) { moveButtonX + 50 - 7, moveButtonY}, WHITE);
+                DrawTextureRec(state->ui, br, (struct Vector2) { moveButtonX + 50 - 7, moveButtonY+17-8}, WHITE);
+                DrawTextureRec(state->ui, bl, (struct Vector2) { moveButtonX, moveButtonY+17-8}, WHITE);
+                
+            }
         }
         
 
@@ -1644,6 +1696,9 @@ int main(void)
     state.wagonFood = 100;
     state.wagonWater = 100;
     state.wagonHealth = 100;
+
+
+    state.tasksUi = (UiTasks){0};
 
     state.tasksUi.cursorArea = -1;
     
