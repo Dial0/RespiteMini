@@ -134,6 +134,8 @@ typedef struct State {
     RenderTexture2D uiRendTex;
     RenderParams renderParams;
 
+    bool playStartDemo;
+
     int movingWagon;
     bool wagonSelected;
     WagonEntity WagonEnt;
@@ -1064,13 +1066,112 @@ int findAsPath(iVec2 startTile, iVec2 endTile, unsigned char* mapData, int* path
     return 0;
 }
 
+void startScreen(State* state) {
+
+    if (IsKeyReleased(KEY_ENTER)) {
+        state->playStartDemo = 0;
+        state->smoothScrollY = 0;
+    }
+
+    static int demoDarkness = 0;
+
+    if ((!demoDarkness) && (state->smoothScrollY <= (state->map.height - state->baseSizeY + 1) * state->scale)) {
+        state->smoothScrollY += 1;
+    }
+    int topReached = 0;
+    if (state->smoothScrollY == ((state->map.height - state->baseSizeY + 1) * state->scale)+1) {
+        topReached = 1;
+    }
+
+    if (topReached && (demoDarkness < 255)) {
+        demoDarkness += 1;
+    }
+
+    if(demoDarkness == 255){
+        state->smoothScrollY = 0;
+        topReached = 0;
+    }
+
+    if (state->smoothScrollY == 0 && demoDarkness>0){
+        demoDarkness -= 1;
+    }
+
+    BeginDrawing();
+
+    ClearBackground(RAYWHITE);
+
+    BeginTextureMode(state->mapRendTex);
+
+    ClearBackground(RAYWHITE);
+
+    int scrollOffset = (state->smoothScrollY / state->scale);
+
+    int mapRenderOffset = -(state->map.height - state->mapRendTex.texture.height);
+
+    DrawTexture(state->map, 0, mapRenderOffset + scrollOffset, WHITE);
+
+    for (int i = 0; i < (state->mapSizeX*state->mapSizeY); i++) {
+        int darknessLevel = demoDarkness;
+        if (darknessLevel) {
+            iVec2 darknessTileLoc = mapIdxToXY(i,state->mapSizeX);
+            iVec2 darknessPixel = mapTileXYtoScreenXY(darknessTileLoc.x,darknessTileLoc.y,state->renderParams);
+            unsigned int dataPos = 2 + i * 4;
+            unsigned int darkTileData;
+            memcpy(&darkTileData, state->mapData + dataPos, 4);
+            int darkTileMoveCost = calcTileMoveCost(darkTileData) * state->darknessCostMulti;
+            int color = darknessLevel;
+            DrawRectangle(darknessPixel.x,darknessPixel.y,state->renderParams.tileSize,state->renderParams.tileSize,(Color){0,0,0,color});
+        }
+    }
+
+    EndTextureMode();
+
+    BeginTextureMode(state->uiRendTex);
+
+    ClearBackground(BLANK);
+
+    int windowX = state->mapSizeX * state->tileSize;
+    int windowY = 0;
+    int windowSizeX = 120;
+    int windowSizeY = state->baseSizeY;
+
+    int demoTileY = (state->smoothScrollY/state->scale)/16;
+
+    unsigned int tileData = getTileData(state->cursTilePos.x, demoTileY, state->mapData);
+    renderTileInfoWindow(state->ui,windowX,windowY,windowSizeX,windowSizeY,tileData);
+
+
+    int startWindowWidth = 100;
+    int startWindowHeight = 50;
+    int startWindowX = (state->mapSizeX * state->tileSize)/2 - startWindowWidth/2;
+    int startWindowY = state->baseSizeY/2 - startWindowHeight/2;
+    renderUiWindow(state->ui,startWindowX,startWindowY,startWindowWidth,startWindowHeight);
+    DrawTextEx(font, "Press Enter\n To Start", (struct Vector2) { startWindowX+14, startWindowY+6}, fontSize, 0, colorNormal);
+
+    EndTextureMode();
+
+    Rectangle mapRendTexSrc = { 0, 0, state->mapRendTex.texture.width, -state->mapRendTex.texture.height };
+    DrawTexturePro(state->mapRendTex.texture, mapRendTexSrc,
+        (struct Rectangle) { 0, -state->scale+state->smoothScrollY%state->scale, state->baseSizeX* state->scale, state->baseSizeY* state->scale},
+        (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+
+    Rectangle uiRendTexSrc = { 0, 0, state->uiRendTex.texture.width, -state->uiRendTex.texture.height };
+    DrawTexturePro(state->uiRendTex.texture, uiRendTexSrc,
+        (struct Rectangle) { 0, 0, state->baseSizeX* state->scale, state->baseSizeY* state->scale},
+        (struct Vector2) { 0, 0 }, 0.0f, WHITE);
+
+    EndDrawing();
+}
 
 
 void UpdateDrawFrame(void* v_state){
-    
-   
 
     State* state = (State*)v_state;
+    if (state->playStartDemo){
+        startScreen(state);
+        return;
+    }
+
     Rectangle cursorRec = { 0.0f,0.0f,18.0f,18.0f };
     if(state->tasksUiActive) {
 
@@ -1150,11 +1251,6 @@ void UpdateDrawFrame(void* v_state){
     if (state->cursTilePos.x < 0) state->cursTilePos.x = 0;
     if (state->cursTilePos.x >= state->mapSizeX) state->cursTilePos.x = state->mapSizeX - 1;
 
-    //int ScrollLockHigh = state->WagonEnt.wagonTilePos.y * state->tileSize * state->scale;
-    //int ScrollLockLow = ScrollLockHigh - (state->baseSizeY - state->tileSize - 1) * state->scale;
-
-    int ScrollLockHigh = state->mapSizeY * state->tileSize * state->scale;
-    int ScrollLockLow = 0;
     bool scrollUp = 0;
     bool scrollDown = 0;
 
@@ -1166,8 +1262,8 @@ void UpdateDrawFrame(void* v_state){
         scrollDown = 1;
     }
 
-    if (scrollUp && state->smoothScrollY <= (state->map.height - state->baseSizeY + 1)*state->scale && state->smoothScrollY< ScrollLockHigh) state->smoothScrollY += 1;
-    if (scrollDown && state->smoothScrollY>0 && state->smoothScrollY > ScrollLockLow) state->smoothScrollY -= 1;
+    if (scrollUp && state->smoothScrollY <= (state->map.height - state->baseSizeY + 1)*state->scale) state->smoothScrollY += 1;
+    if (scrollDown && state->smoothScrollY>0) state->smoothScrollY -= 1;
 
 
     if (IsKeyReleased(KEY_U)) {
@@ -1344,7 +1440,6 @@ void UpdateDrawFrame(void* v_state){
                     }
                 }
                 
-
             }
             
         }
@@ -1388,7 +1483,6 @@ void UpdateDrawFrame(void* v_state){
             DrawRectangle(darknessPixel.x,darknessPixel.y,state->renderParams.tileSize,state->renderParams.tileSize,(Color){0,0,0,color});
         }
     }
-    
 
     //drawDebugGrid(renderParams);
 
@@ -1716,6 +1810,8 @@ int main(void)
 
     state.darknessMap = calloc(state.mapSizeX * state.mapSizeY, sizeof(int));
     state.darknessCostMulti = 4;
+
+    state.playStartDemo = 1;
 
     state.curTileTurnsTraversed=0;
 
