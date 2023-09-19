@@ -1150,11 +1150,24 @@ void UpdateDrawFrame(void* v_state){
     if (state->cursTilePos.x < 0) state->cursTilePos.x = 0;
     if (state->cursTilePos.x >= state->mapSizeX) state->cursTilePos.x = state->mapSizeX - 1;
 
-    int ScrollLockHigh = state->WagonEnt.wagonTilePos.y * state->tileSize * state->scale;
-    int ScrollLockLow = ScrollLockHigh - (state->baseSizeY - state->tileSize - 1) * state->scale;
+    //int ScrollLockHigh = state->WagonEnt.wagonTilePos.y * state->tileSize * state->scale;
+    //int ScrollLockLow = ScrollLockHigh - (state->baseSizeY - state->tileSize - 1) * state->scale;
 
-    if (IsKeyDown(KEY_W) && state->smoothScrollY <= (state->map.height - state->baseSizeY + 1)*state->scale && state->smoothScrollY< ScrollLockHigh) state->smoothScrollY += 1;
-    if (IsKeyDown(KEY_S) && state->smoothScrollY>0 && state->smoothScrollY > ScrollLockLow) state->smoothScrollY -= 1;
+    int ScrollLockHigh = state->mapSizeY * state->tileSize * state->scale;
+    int ScrollLockLow = 0;
+    bool scrollUp = 0;
+    bool scrollDown = 0;
+
+
+    if(mapTileXYtoScreenXY(state->cursTilePos.x,state->cursTilePos.y,state->renderParams).y < (state->baseSizeY/2)){
+        scrollUp = 1;
+    }
+    if(mapTileXYtoScreenXY(state->cursTilePos.x,state->cursTilePos.y,state->renderParams).y > (state->baseSizeY/2)){
+        scrollDown = 1;
+    }
+
+    if (scrollUp && state->smoothScrollY <= (state->map.height - state->baseSizeY + 1)*state->scale && state->smoothScrollY< ScrollLockHigh) state->smoothScrollY += 1;
+    if (scrollDown && state->smoothScrollY>0 && state->smoothScrollY > ScrollLockLow) state->smoothScrollY -= 1;
 
 
     if (IsKeyReleased(KEY_U)) {
@@ -1171,7 +1184,7 @@ void UpdateDrawFrame(void* v_state){
             
         int curTileData = getTileData(state->WagonEnt.wagonTilePos.x,state->WagonEnt.wagonTilePos.y,state->mapData);
         TileResources curTileRes = calcTileResources(curTileData);
-        state->tasksUi.numTabs = 3;
+        state->tasksUi.numTabs = 0;
         state->tasksUi.selectedTab = 0;
         state->tasksUi.selectedTask = 0;
 
@@ -1227,16 +1240,25 @@ void UpdateDrawFrame(void* v_state){
     }
 
     if (IsKeyReleased(KEY_ENTER)) {
+
         if (state->movingWagon) {
             state->WagonEnt.wagonTargetTilePos = mapIdxToXY(state->path[0],state->mapSizeX);
             state->movingWagon = false;
+            //RESET THE TASKS HERE
+            //Only reset them once we commit to a move, so if we back out we dont need to redo the task assignments
         }
-        else {
-            if (state->WagonEnt.wagonTilePos.x == state->cursTilePos.x 
-                && state->WagonEnt.wagonTilePos.y == state->cursTilePos.y) {
-                state->movingWagon = true;
-            }
+        if (state->tasksUi.moveSelected) {
+            state->tasksUi = (UiTasks){0};
+            state->tasksUi.cursorArea = -1;
+            state->tasksUiActive = 0;
+            state->movingWagon = true;
         }
+
+        if (state->tasksUi.endTurnSelected) {
+            state->curTurn += 1;
+        }
+
+
     }
     
     if (state->movingWagon
@@ -1273,6 +1295,7 @@ void UpdateDrawFrame(void* v_state){
             if (state->movePathIdx == state->pathsize) {
                 state->movePathIdx = 0;
                 state->pathsize = 0;
+                state->tasksUiActive = 1;
             }
             else {
                 state->WagonEnt.wagonTargetTilePos = mapIdxToXY(state->path[state->movePathIdx], state->mapSizeX);
@@ -1295,6 +1318,8 @@ void UpdateDrawFrame(void* v_state){
         LOG("TURN\n");
         if (state->curTurn > 20) { //dont start the darkness creep till we are past turn 20
 
+
+            // Here we do the darkness creep
             for (int i = 0; i < (state->mapSizeX*state->mapSizeY); i++) {
                 unsigned int dataPos = 2 + i * 4;
                 unsigned int tileData;
@@ -1326,7 +1351,6 @@ void UpdateDrawFrame(void* v_state){
 
         //do all the updating of things that happen each turn here
 
-        //UPDATE mist/darkness
 
     }
 
@@ -1449,8 +1473,10 @@ void UpdateDrawFrame(void* v_state){
 
 
     renderWagon(state->WagonEnt, state->renderParams, state->wagonAni);
-
-    DrawTextureRec(state->ui, cursorRec, (struct Vector2) { cursPixel.x - centOff, cursPixel.y - centOff }, WHITE);
+    
+    if(!state->tasksUiActive){
+        DrawTextureRec(state->ui, cursorRec, (struct Vector2) { cursPixel.x - centOff, cursPixel.y - centOff }, WHITE);
+    }
 
     if(state->wagonSelected) {
         iVec2 wagPixel = mapWorldXYtoScreenXY(state->WagonEnt.wagonWorldPos.x, state->WagonEnt.wagonWorldPos.y, state->renderParams);
@@ -1701,6 +1727,7 @@ int main(void)
     state.tasksUi = (UiTasks){0};
 
     state.tasksUi.cursorArea = -1;
+    state.tasksUiActive = 1;
     
     #if defined(PLATFORM_WEB)
         emscripten_set_main_loop_arg(UpdateDrawFrame, &state, 60, 1);
