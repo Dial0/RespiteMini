@@ -141,7 +141,8 @@ typedef struct State {
     WagonEntity WagonEnt;
     int wagonFood;
     int wagonWater;
-    int wagonHealth;
+    int wagonEffHealth;
+    int wagonPop;
     int path[12];
     int pathsize;
     int movePathIdx;
@@ -1235,6 +1236,7 @@ void UpdateDrawFrame(void* v_state){
             } else {
                 state->tasksUi.cursorArea = 2;
                 state->tasksUi.moveSelected = 1;
+                state->tasksUi.endTurnSelected = 0;
             }
         }
 
@@ -1352,6 +1354,7 @@ void UpdateDrawFrame(void* v_state){
 
         if (state->tasksUi.endTurnSelected) {
             state->curTurn += 1;
+            LOG("MANUAL TURN\n");
         }
 
 
@@ -1392,6 +1395,7 @@ void UpdateDrawFrame(void* v_state){
                 state->movePathIdx = 0;
                 state->pathsize = 0;
                 state->tasksUiActive = 1;
+                skip = 1;
             }
             else {
                 state->WagonEnt.wagonTargetTilePos = mapIdxToXY(state->path[state->movePathIdx], state->mapSizeX);
@@ -1404,6 +1408,7 @@ void UpdateDrawFrame(void* v_state){
             int turnAmountTraversed = round(tileAmountTraversed*(float)tileMoveCost);
             if (turnAmountTraversed > state->curTileTurnsTraversed) {
                 state->curTurn += 1;
+                LOG("MOVE TURN\n");
                 state->curTileTurnsTraversed = turnAmountTraversed;
             }
         }
@@ -1411,7 +1416,7 @@ void UpdateDrawFrame(void* v_state){
 
     if (state->curTurn != state->prevTurn) {
         state->prevTurn = state->curTurn;
-        LOG("TURN\n");
+        
         if (state->curTurn > 20) { //dont start the darkness creep till we are past turn 20
 
 
@@ -1446,6 +1451,46 @@ void UpdateDrawFrame(void* v_state){
 
         //do all the updating of things that happen each turn here
 
+        //process all the tasks here? before the deducts?
+
+        state->wagonFood -= state->wagonPop;
+        state->wagonWater -= state->wagonPop;
+
+        if (state->wagonFood < 0) {
+            state->wagonPop += state->wagonFood;
+            state->wagonFood = 0;
+        }
+
+        if (state->wagonWater < 0) {
+            state->wagonPop += state->wagonWater;
+            state->wagonWater = 0;
+        }
+
+        if (state->wagonPop < 0){
+            state->wagonPop = 0;
+        }
+
+        int numPopAssigned = 0;
+        for (int i = 0; i < state->tasksUi.numTasks; i++) {
+             numPopAssigned += state->tasksUi.task[i].numAssigned;
+        }
+        
+        state->wagonEffHealth -= numPopAssigned;
+        if (state->wagonEffHealth < state->wagonPop/4){
+            state->wagonEffHealth = state->wagonPop/4;
+        }
+
+        if (state->wagonEffHealth < numPopAssigned){
+            //we need to auto unassign people
+        }
+
+        if(state->wagonEffHealth > state->wagonPop) {
+            state->wagonEffHealth =state->wagonPop;
+        }
+
+        if(state->wagonPop <= 0) {
+            //game over
+        }
 
     }
 
@@ -1601,7 +1646,7 @@ void UpdateDrawFrame(void* v_state){
         sprintf(water, "%i", state->wagonWater);
 
         char health[10]; 
-        sprintf(health, "%i", state->wagonHealth);
+        sprintf(health, "%i", state->wagonEffHealth);
 
         Rectangle statIcons = {48,0,16,16}; 
 
@@ -1817,8 +1862,8 @@ int main(void)
 
     state.wagonFood = 100;
     state.wagonWater = 100;
-    state.wagonHealth = 100;
-
+    state.wagonPop = 4;
+    state.wagonEffHealth = state.wagonPop;
 
     state.tasksUi = (UiTasks){0};
 
