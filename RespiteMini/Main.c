@@ -104,6 +104,7 @@ typedef struct UiTasks{
     
     int numTasks;
     int selectedTask;
+    int activeTask;
     Task task[9];
 
     bool moveSelected;
@@ -175,9 +176,6 @@ typedef struct TileResources {
     char soil;
     char town;
 } TileResources;
-//------------------------------------------------------------------------------------
-// Program main entry point
-//------------------------------------------------------------------------------------
 
 //Returns the screenXY of the top left pixel of the tile
 iVec2 mapTileXYtoScreenXY(int MapX, int MapY, RenderParams param) {
@@ -854,6 +852,14 @@ void renderTaskItem(Texture2D ui, int posX, int posY, int taskId, int assigned, 
 
     DrawTextEx(font, taskName, (struct Vector2) { posX + 4, posY +4 }, fontSize, 0, colorNormal);
 
+    char strAssigned[10]; 
+    sprintf(strAssigned, "%i", assigned);
+    DrawTextEx(font, strAssigned, (struct Vector2) { posX + 102, posY +9}, fontSize, 1, WHITE);
+
+    char strturnsReq[10]; 
+    sprintf(strturnsReq, "%i", assigned);
+    DrawTextEx(font, strturnsReq, (struct Vector2) { posX + 102, posY +24}, fontSize, 1, WHITE);
+
 }
 
 unsigned int getTileData(unsigned char x, unsigned char y, unsigned char* mapData) {
@@ -1205,7 +1211,7 @@ void UpdateDrawFrame(void* v_state){
     Rectangle cursorRec = { 0.0f,0.0f,18.0f,18.0f };
     if(state->tasksUiActive) {
 
-        if (IsKeyReleased(KEY_RIGHT)) {
+        if (IsKeyReleased(KEY_RIGHT) && state->tasksUi.activeTask == -1) {
 
             if ((state->tasksUi.cursorArea == 0) && state->tasksUi.selectedTab < 2){
                 state->tasksUi.selectedTab += 1;
@@ -1227,7 +1233,7 @@ void UpdateDrawFrame(void* v_state){
                 state->tasksUi.selectedTab -= 1;
             }
 
-            if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.selectedTask) % 3 != 0){
+            if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.selectedTask) % 3 != 0 && state->tasksUi.activeTask == -1){
                 state->tasksUi.selectedTask -= 1;
             }
 
@@ -1238,8 +1244,14 @@ void UpdateDrawFrame(void* v_state){
         }
         
         if (IsKeyReleased(KEY_UP)) {
+
             if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.selectedTask) >= 3) {
-                state->tasksUi.selectedTask -= 3;
+
+                if (state->tasksUi.activeTask != -1){
+
+                } else {
+                    state->tasksUi.selectedTask -= 3;
+                }
             }
 
             if (state->tasksUi.cursorArea == 2) {
@@ -1261,7 +1273,11 @@ void UpdateDrawFrame(void* v_state){
             }
 
             if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.numTasks) > (state->tasksUi.selectedTask + 3)) {
-                state->tasksUi.selectedTask += 3;
+                if (state->tasksUi.activeTask != -1){
+
+                } else {
+                    state->tasksUi.selectedTask += 3;
+                }
             } else {
                 state->tasksUi.cursorArea = 2;
                 state->tasksUi.moveSelected = 1;
@@ -1368,12 +1384,15 @@ void UpdateDrawFrame(void* v_state){
 
     if (IsKeyReleased(KEY_ENTER)) {
 
+        //Confirm Wagon Move Target
         if (state->movingWagon) {
             state->WagonEnt.wagonTargetTilePos = mapIdxToXY(state->path[0],state->mapSizeX);
             state->movingWagon = false;
             //RESET THE TASKS HERE
             //Only reset them once we commit to a move, so if we back out we dont need to redo the task assignments
         }
+
+        //Switch to Moving Wagon Mode
         if (state->tasksUi.moveSelected) {
             state->tasksUi = (UiTasks){0};
             state->tasksUi.cursorArea = -1;
@@ -1381,15 +1400,26 @@ void UpdateDrawFrame(void* v_state){
             state->movingWagon = true;
         }
 
+        //Manual End Turn for tasks ui
         if (state->tasksUi.endTurnSelected) {
             state->curTurn += 1;
-            LOG("MANUAL TURN\n");
         }
 
+        //Game over - press enter to reset
         if(state->showEndDialog){
             resetState(state);
         }
 
+        //Select / Deselect task for assigning people
+        if(state->tasksUi.cursorArea==1) {
+            if (state->tasksUi.activeTask == -1){ 
+                state->tasksUi.activeTask = state->tasksUi.selectedTask;
+            } else {
+                state->tasksUi.activeTask = -1;
+            }
+        }
+
+        
 
     }
     
@@ -1740,10 +1770,33 @@ void UpdateDrawFrame(void* v_state){
 
                 renderTaskItem(state->ui, taskListStartX, taskListStartY, taskId, 0, 0, 0);
                 if(state->tasksUi.cursorArea==1 && state->tasksUi.selectedTask==i) {
-                    DrawTextureRec(state->ui, tl, (struct Vector2) { taskListStartX, taskListStartY}, WHITE);
-                    DrawTextureRec(state->ui, tr, (struct Vector2) { taskListStartX + 113, taskListStartY}, WHITE);
-                    DrawTextureRec(state->ui, br, (struct Vector2) { taskListStartX + 113, taskListStartY + 34}, WHITE);
-                    DrawTextureRec(state->ui, bl, (struct Vector2) { taskListStartX, taskListStartY + 34}, WHITE);
+
+                    //Draw Number Assigned
+
+
+                    //Draw Turns Left to complete task
+
+                    if (state->tasksUi.activeTask == i) {
+
+                        Rectangle upArrow = {101,51,6,4};
+                        DrawTextureRec(state->ui, upArrow, (struct Vector2) { taskListStartX+8+ 97, taskListStartY+4}, WHITE);
+
+                        Rectangle downArrow = {101,57,6,4};
+                        DrawTextureRec(state->ui, downArrow, (struct Vector2) { taskListStartX+8 + 97, taskListStartY+24}, WHITE);
+
+                        DrawTextureRec(state->ui, tl, (struct Vector2) { taskListStartX + 97, taskListStartY}, RED);
+                        DrawTextureRec(state->ui, tr, (struct Vector2) { taskListStartX + 113, taskListStartY}, RED);
+                        DrawTextureRec(state->ui, br, (struct Vector2) { taskListStartX + 113, taskListStartY + 34}, RED);
+                        DrawTextureRec(state->ui, bl, (struct Vector2) { taskListStartX + 97, taskListStartY + 34}, RED);
+                    } else {
+                        DrawTextureRec(state->ui, tl, (struct Vector2) { taskListStartX, taskListStartY}, WHITE);
+                        DrawTextureRec(state->ui, tr, (struct Vector2) { taskListStartX + 113, taskListStartY}, WHITE);
+                        DrawTextureRec(state->ui, br, (struct Vector2) { taskListStartX + 113, taskListStartY + 34}, WHITE);
+                        DrawTextureRec(state->ui, bl, (struct Vector2) { taskListStartX, taskListStartY + 34}, WHITE);
+                    }
+
+
+
                 }
                 
                 taskListStartX += taskItemSpacingX;
@@ -1767,6 +1820,8 @@ void UpdateDrawFrame(void* v_state){
             DrawTextureRec(state->ui, turnIcon, (struct Vector2) { turnButtonX+2, turnButtonY+1}, colorSparse);
 
             if (state->tasksUi.endTurnSelected) {
+
+
                 DrawTextureRec(state->ui, tl, (struct Vector2) { turnButtonX, turnButtonY}, WHITE);
                 DrawTextureRec(state->ui, tr, (struct Vector2) { turnButtonX + 50 - 7, turnButtonY}, WHITE);
                 DrawTextureRec(state->ui, br, (struct Vector2) { turnButtonX + 50 - 7, turnButtonY+17-8}, WHITE);
@@ -1915,6 +1970,7 @@ int main(void)
 
     state.tasksUi.cursorArea = -1;
     state.tasksUiActive = 1;
+    state.tasksUi.activeTask = -1;
     
     #if defined(PLATFORM_WEB)
         emscripten_set_main_loop_arg(UpdateDrawFrame, &state, 60, 1);
