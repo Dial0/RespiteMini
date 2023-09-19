@@ -135,6 +135,7 @@ typedef struct State {
     RenderParams renderParams;
 
     bool playStartDemo;
+    bool showEndDialog;
 
     int movingWagon;
     bool wagonSelected;
@@ -1164,6 +1165,34 @@ void startScreen(State* state) {
     EndDrawing();
 }
 
+void resetState(State* state) {
+    state->curTurn = 0;
+    state->prevTurn = 0;
+    state->smoothScrollY = 0;
+    state->cursTilePos = (iVec2){ 15,0 };
+    state->movingWagon = 0;
+
+    state->WagonEnt = (WagonEntity){ (struct iVec2) { 15,0 },(struct Vector2) { 15.0f,0.0f },(struct iVec2) { 15,0 },0, 0.01f };
+
+    state->pathsize = 0;
+    state->movePathIdx = 0;
+    state->totalPathCost = 0;
+    free(state->darknessMap);
+    state->darknessMap = calloc(state->mapSizeX * state->mapSizeY, sizeof(int));
+
+    state->showEndDialog = 0;
+    state->curTileTurnsTraversed = 0;
+
+    state->wagonFood = 100;
+    state->wagonWater = 100;
+    state->wagonPop = 4;
+    state->wagonEffHealth = state->wagonPop;
+
+    state->tasksUi = (UiTasks){0};
+
+    state->tasksUi.cursorArea = -1;
+    state->tasksUiActive = 1;
+}
 
 void UpdateDrawFrame(void* v_state){
 
@@ -1240,7 +1269,7 @@ void UpdateDrawFrame(void* v_state){
             }
         }
 
-    } else {
+    } else if (!state->showEndDialog) {
         if (IsKeyReleased(KEY_RIGHT)) state->cursTilePos.x += 1;
         if (IsKeyReleased(KEY_LEFT)) state->cursTilePos.x -= 1;
         if (IsKeyReleased(KEY_UP)) state->cursTilePos.y += 1;
@@ -1355,6 +1384,10 @@ void UpdateDrawFrame(void* v_state){
         if (state->tasksUi.endTurnSelected) {
             state->curTurn += 1;
             LOG("MANUAL TURN\n");
+        }
+
+        if(state->showEndDialog){
+            resetState(state);
         }
 
 
@@ -1490,6 +1523,11 @@ void UpdateDrawFrame(void* v_state){
 
         if(state->wagonPop <= 0) {
             //game over
+            state->showEndDialog = 1;
+            state->tasksUiActive = 0;
+            state->movingWagon = false; 
+            state->movePathIdx = 0;
+            state->pathsize = 0;
         }
 
     }
@@ -1613,7 +1651,7 @@ void UpdateDrawFrame(void* v_state){
 
     renderWagon(state->WagonEnt, state->renderParams, state->wagonAni);
     
-    if(!state->tasksUiActive){
+    if(!state->tasksUiActive && !state->showEndDialog){
         DrawTextureRec(state->ui, cursorRec, (struct Vector2) { cursPixel.x - centOff, cursPixel.y - centOff }, WHITE);
     }
 
@@ -1745,6 +1783,13 @@ void UpdateDrawFrame(void* v_state){
             }
         }
         
+        if(state->showEndDialog) {
+            int endWindowWidth = 100;
+            int endWindowHeight = 50;
+            int endWindowX = (state->mapSizeX * state->tileSize)/2 - endWindowWidth/2;
+            int endWindowY = state->baseSizeY/2 - endWindowHeight/2;
+            renderUiWindow(state->ui,endWindowX,endWindowY,endWindowWidth,endWindowHeight);
+        }
 
     //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
     EndTextureMode();
@@ -1857,6 +1902,7 @@ int main(void)
     state.darknessCostMulti = 4;
 
     state.playStartDemo = 1;
+    state.showEndDialog = 0;
 
     state.curTileTurnsTraversed=0;
 
