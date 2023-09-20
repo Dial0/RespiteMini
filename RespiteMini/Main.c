@@ -116,6 +116,33 @@ typedef struct UiTasks{
 Font font;
 int fontSize = 15;
 
+typedef struct Ini {
+    //-----
+    //Tasks
+    //-----
+    //Multipliers
+    int waterMulti;
+    int woodMulti;
+    int huntMulti;
+    int fishMulti;
+    int forageMulti;
+    int mineMulti;
+    int farmMulti;
+    int recruitMulti;
+
+    //Required Turns for each task
+    int waterTurns;
+    int woodTurns;
+    int huntTurns;
+    int fishTurns;
+    int forageTurns;
+    int mineTurns;
+    int farmTurns;
+    int recruitTurns;
+
+
+}Ini;
+
 typedef struct State {
     int tileSize;
     int baseSizeX;
@@ -165,6 +192,7 @@ typedef struct State {
     bool tasksUiActive;
     UiTasks tasksUi;
 
+    Ini ini;
 }State;
 
 typedef struct TileResources {
@@ -695,14 +723,7 @@ void incrementIcon(int* resourceX, int* resourceY, int iconXspacing, int edgeSpa
     }
 };
 
-void renderTileInfoWindow(Texture2D ui, int windowX, int windowY, int windowSizeX, int windowSizeY, unsigned int tileData) {
-    int edgeSpacing = 8;
-
-    renderUiWindow(ui,windowX,windowY,windowSizeX,windowSizeY);
-    
-    int tileInfoY = windowY + edgeSpacing + 40;
-    int tileInfoSpacing = 36;
-
+int calcTerrainLevel(int tileData ){
     int terrainFlags = 0b0000000111101110;
 
     int tileTerrains = tileData & terrainFlags;
@@ -721,6 +742,19 @@ void renderTileInfoWindow(Texture2D ui, int windowX, int windowY, int windowSize
     } else {
         terrainLevel = 3;
     }
+
+    return terrainLevel;
+}
+
+void renderTileInfoWindow(Texture2D ui, int windowX, int windowY, int windowSizeX, int windowSizeY, unsigned int tileData) {
+    int edgeSpacing = 8;
+
+    renderUiWindow(ui,windowX,windowY,windowSizeX,windowSizeY);
+    
+    int tileInfoY = windowY + edgeSpacing + 40;
+    int tileInfoSpacing = 36;
+
+    int terrainLevel = calcTerrainLevel(tileData);
 
     if (tSWAMP & tileData) {
         renderTileInfo(ui,windowX + edgeSpacing,tileInfoY,0,terrainLevel);
@@ -1080,6 +1114,28 @@ void startScreen(State* state) {
     if (IsKeyReleased(KEY_ENTER)) {
         state->playStartDemo = 0;
         state->smoothScrollY = 0;
+        Ini ini = {
+            //Multipliers
+            .waterMulti = 4,
+            .woodMulti = 4,
+            .huntMulti = 4,
+            .fishMulti = 4,
+            .forageMulti = 4,
+            .farmMulti = 4,
+            .recruitMulti = 4,
+
+            //Required Turns for each task
+            .waterTurns = 1,
+            .woodTurns = 1,
+            .huntTurns = 1,
+            .fishTurns = 1,
+            .forageTurns = 1,
+            .farmTurns = 1,
+            .recruitTurns = 1
+
+        };
+
+        state->ini = ini;
     }
 
     static int demoDarkness = 0;
@@ -1321,7 +1377,7 @@ void UpdateDrawFrame(void* v_state){
 
             }
 
-            else if (state->tasksUi.cursorArea == 0){
+            else if (state->tasksUi.cursorArea == 0) {
                 state->tasksUi.cursorArea = 1;
                 state->tasksUi.selectedTask = state->tasksUi.selectedTab;
                 if (state->tasksUi.selectedTask >= state->tasksUi.numTasks) {
@@ -1531,6 +1587,33 @@ void UpdateDrawFrame(void* v_state){
 
         //do all the updating of things that happen each turn here
 
+        for (int i = 0; i < state->tasksUi.numTasks; i++) {
+            Task curTask = state->tasksUi.task[i];
+            int taskId = curTask.id;
+            Ini ini = state->ini;
+            int curTileData = getTileData(state->WagonEnt.wagonTilePos.x,state->WagonEnt.wagonTilePos.y,state->mapData);
+            TileResources tileRes = calcTileResources(curTileData);
+
+            if (taskId == 0) { //Water
+                state->wagonWater += curTask.numAssigned * ini.waterMulti * tileRes.water;
+            } else if (taskId == 1) { //Wood
+                state->wagonEffHealth += curTask.numAssigned * ini.woodMulti * tileRes.wood;
+            } else if (taskId == 2) { //Animals / Hunt
+                state->wagonFood += curTask.numAssigned * ini.huntMulti * tileRes.animals;
+            } else if (taskId == 3) { //Fish
+                state->wagonFood += curTask.numAssigned * ini.fishMulti * tileRes.fish;
+            } else if (taskId == 4) { //Forage
+                state->wagonFood += curTask.numAssigned * ini.forageMulti * tileRes.plants;
+            } else if (taskId == 5) { //Minerals / Mine
+                state->wagonEffHealth += curTask.numAssigned * ini.mineMulti * tileRes.minerals;
+            } else if (taskId == 6) { //Farm
+                state->wagonFood += curTask.numAssigned * ini.farmMulti * tileRes.soil;
+            } else { //Recruit
+                state->wagonPop += curTask.numAssigned * ini.recruitMulti * tileRes.town;
+            }
+
+        }
+        
         //process all the tasks here? before the deducts?
 
         state->wagonFood -= state->wagonPop;
@@ -1546,21 +1629,21 @@ void UpdateDrawFrame(void* v_state){
             state->wagonWater = 0;
         }
 
-        if (state->wagonPop < 0){
+        if (state->wagonPop < 0) {
             state->wagonPop = 0;
         }
 
         int numPopAssigned = 0;
         for (int i = 0; i < state->tasksUi.numTasks; i++) {
-             numPopAssigned += state->tasksUi.task[i].numAssigned;
+            numPopAssigned += state->tasksUi.task[i].numAssigned;
         }
         
         state->wagonEffHealth -= numPopAssigned;
-        if (state->wagonEffHealth < state->wagonPop/4){
+        if (state->wagonEffHealth < state->wagonPop/4) {
             state->wagonEffHealth = state->wagonPop/4;
         }
 
-        if (state->wagonEffHealth < numPopAssigned){
+        if (state->wagonEffHealth < numPopAssigned) {
             //we need to auto unassign people
         }
 
