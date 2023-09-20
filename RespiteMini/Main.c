@@ -105,6 +105,7 @@ typedef struct UiTasks{
     int numTasks;
     int selectedTask;
     int activeTask;
+    int totAssigned;
     Task task[9];
 
     bool moveSelected;
@@ -1290,8 +1291,11 @@ void UpdateDrawFrame(void* v_state){
         
         if (IsKeyReleased(KEY_UP)) {
 
-            if ((state->tasksUi.cursorArea == 1) && state->tasksUi.activeTask != -1){
-                    state->tasksUi.task[state->tasksUi.activeTask].numAssigned += 1;
+            if ((state->tasksUi.cursorArea == 1) 
+                && state->tasksUi.activeTask != -1
+                && state->tasksUi.totAssigned < state->wagonEffHealth){
+                state->tasksUi.task[state->tasksUi.activeTask].numAssigned += 1;
+                state->tasksUi.totAssigned += 1;
             }
 
             else if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.selectedTask) >= 3) {
@@ -1308,8 +1312,11 @@ void UpdateDrawFrame(void* v_state){
         
         if (IsKeyReleased(KEY_DOWN)) {
 
-            if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.activeTask != -1)) {
+            if ((state->tasksUi.cursorArea == 1) 
+                 && (state->tasksUi.activeTask != -1)
+                 && (state->tasksUi.task[state->tasksUi.activeTask].numAssigned > 0)) {
                 state->tasksUi.task[state->tasksUi.activeTask].numAssigned -= 1;
+                state->tasksUi.totAssigned -= 1;
             }
 
             else if (state->tasksUi.cursorArea == 0){
