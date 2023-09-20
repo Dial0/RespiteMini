@@ -857,7 +857,7 @@ void renderTaskItem(Texture2D ui, int posX, int posY, int taskId, int assigned, 
     DrawTextEx(font, strAssigned, (struct Vector2) { posX + 102, posY +9}, fontSize, 1, WHITE);
 
     char strturnsReq[10]; 
-    sprintf(strturnsReq, "%i", assigned);
+    sprintf(strturnsReq, "%i", turnsReq);
     DrawTextEx(font, strturnsReq, (struct Vector2) { posX + 102, posY +24}, fontSize, 1, WHITE);
 
 }
@@ -1171,6 +1171,50 @@ void startScreen(State* state) {
     EndDrawing();
 }
 
+void setTasksData( int curTileData, UiTasks* tasksUi) {
+    //int curTileData = getTileData(state->WagonEnt.wagonTilePos.x,state->WagonEnt.wagonTilePos.y,state->mapData);
+    TileResources curTileRes = calcTileResources(curTileData);
+    tasksUi->numTabs = 0;
+    tasksUi->selectedTab = 0;
+    tasksUi->selectedTask = 0;
+
+    tasksUi->cursorArea = 1;
+
+    tasksUi->numTasks = 0;
+    if (curTileRes.water) {
+        tasksUi->task[tasksUi->numTasks].id = 0;
+        tasksUi->numTasks += 1;
+    }
+    if (curTileRes.wood) {
+        tasksUi->task[tasksUi->numTasks].id = 1;
+        tasksUi->numTasks += 1;
+    }
+    if (curTileRes.animals) {
+        tasksUi->task[tasksUi->numTasks].id = 2;
+        tasksUi->numTasks += 1;
+    }
+    if (curTileRes.fish) {
+        tasksUi->task[tasksUi->numTasks].id = 3;
+        tasksUi->numTasks += 1;
+    }
+    if (curTileRes.plants) {
+        tasksUi->task[tasksUi->numTasks].id = 4;
+        tasksUi->numTasks += 1;
+    }
+    if (curTileRes.minerals) {
+        tasksUi->task[tasksUi->numTasks].id = 5;
+        tasksUi->numTasks += 1;
+    }
+    if (curTileRes.soil) {
+        tasksUi->task[tasksUi->numTasks].id = 6;
+        tasksUi->numTasks += 1;
+    }
+    if (curTileRes.town) {
+        tasksUi->task[tasksUi->numTasks].id = 7;
+        tasksUi->numTasks += 1;
+    }
+}
+
 void resetState(State* state) {
     state->curTurn = 0;
     state->prevTurn = 0;
@@ -1199,6 +1243,7 @@ void resetState(State* state) {
     state->tasksUi.cursorArea = -1;
     state->tasksUiActive = 1;
 }
+
 
 void UpdateDrawFrame(void* v_state){
 
@@ -1245,16 +1290,15 @@ void UpdateDrawFrame(void* v_state){
         
         if (IsKeyReleased(KEY_UP)) {
 
-            if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.selectedTask) >= 3) {
-
-                if (state->tasksUi.activeTask != -1){
-
-                } else {
-                    state->tasksUi.selectedTask -= 3;
-                }
+            if ((state->tasksUi.cursorArea == 1) && state->tasksUi.activeTask != -1){
+                    state->tasksUi.task[state->tasksUi.activeTask].numAssigned += 1;
             }
 
-            if (state->tasksUi.cursorArea == 2) {
+            else if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.selectedTask) >= 3) {
+                state->tasksUi.selectedTask -= 3;
+            }
+
+            else if (state->tasksUi.cursorArea == 2) {
                 state->tasksUi.cursorArea = 1;
                 state->tasksUi.selectedTask = state->tasksUi.numTasks-1;
                 state->tasksUi.endTurnSelected = 0;
@@ -1264,7 +1308,11 @@ void UpdateDrawFrame(void* v_state){
         
         if (IsKeyReleased(KEY_DOWN)) {
 
-            if (state->tasksUi.cursorArea == 0){
+            if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.activeTask != -1)) {
+                state->tasksUi.task[state->tasksUi.activeTask].numAssigned -= 1;
+            }
+
+            else if (state->tasksUi.cursorArea == 0){
                 state->tasksUi.cursorArea = 1;
                 state->tasksUi.selectedTask = state->tasksUi.selectedTab;
                 if (state->tasksUi.selectedTask >= state->tasksUi.numTasks) {
@@ -1272,17 +1320,17 @@ void UpdateDrawFrame(void* v_state){
                 }
             }
 
-            if ((state->tasksUi.cursorArea == 1) && (state->tasksUi.numTasks) > (state->tasksUi.selectedTask + 3)) {
-                if (state->tasksUi.activeTask != -1){
-
-                } else {
+            else if (state->tasksUi.cursorArea == 1) {
+                if ((state->tasksUi.numTasks) > (state->tasksUi.selectedTask + 3)) {
                     state->tasksUi.selectedTask += 3;
+                } else {
+                    state->tasksUi.cursorArea = 2;
+                    state->tasksUi.moveSelected = 1;
+                    state->tasksUi.endTurnSelected = 0;
                 }
-            } else {
-                state->tasksUi.cursorArea = 2;
-                state->tasksUi.moveSelected = 1;
-                state->tasksUi.endTurnSelected = 0;
-            }
+            } 
+            
+
         }
 
     } else if (!state->showEndDialog) {
@@ -1312,60 +1360,8 @@ void UpdateDrawFrame(void* v_state){
     if (scrollUp && state->smoothScrollY <= (state->map.height - state->baseSizeY + 1)*state->scale) state->smoothScrollY += 1;
     if (scrollDown && state->smoothScrollY>0) state->smoothScrollY -= 1;
 
-
-    if (IsKeyReleased(KEY_U)) {
-        if (state->tasksUiActive) {
-            state->tasksUiActive = 0;
-            state->tasksUi.cursorArea = -1;
-        } else {
-            state->tasksUiActive = 1;
-        }
-    }
-
-
     if(state->tasksUiActive && state->tasksUi.cursorArea == -1){ //we just opened the menu, so we need to initalise it
-            
-        int curTileData = getTileData(state->WagonEnt.wagonTilePos.x,state->WagonEnt.wagonTilePos.y,state->mapData);
-        TileResources curTileRes = calcTileResources(curTileData);
-        state->tasksUi.numTabs = 0;
-        state->tasksUi.selectedTab = 0;
-        state->tasksUi.selectedTask = 0;
 
-        state->tasksUi.cursorArea = 1;
-
-        state->tasksUi.numTasks = 0;
-        if (curTileRes.water) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 0;
-            state->tasksUi.numTasks += 1;
-        }
-        if (curTileRes.wood) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 1;
-            state->tasksUi.numTasks += 1;
-        }
-        if (curTileRes.animals) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 2;
-            state->tasksUi.numTasks += 1;
-        }
-        if (curTileRes.fish) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 3;
-            state->tasksUi.numTasks += 1;
-        }
-        if (curTileRes.plants) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 4;
-            state->tasksUi.numTasks += 1;
-        }
-        if (curTileRes.minerals) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 5;
-            state->tasksUi.numTasks += 1;
-        }
-        if (curTileRes.soil) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 6;
-            state->tasksUi.numTasks += 1;
-        }
-        if (curTileRes.town) {
-            state->tasksUi.task[state->tasksUi.numTasks].id = 7;
-            state->tasksUi.numTasks += 1;
-        }
     }
 
 
@@ -1388,16 +1384,27 @@ void UpdateDrawFrame(void* v_state){
         if (state->movingWagon) {
             state->WagonEnt.wagonTargetTilePos = mapIdxToXY(state->path[0],state->mapSizeX);
             state->movingWagon = false;
+
             //RESET THE TASKS HERE
-            //Only reset them once we commit to a move, so if we back out we dont need to redo the task assignments
+            //Only reset them once we commit to a move,
+            //so if we back out we dont need to redo the task assignments
+            if ( state->WagonEnt.wagonTilePos.x != state->cursTilePos.x  
+                 || state->WagonEnt.wagonTilePos.y != state->cursTilePos.y) {
+                state->tasksUi = (UiTasks){0};
+            } else {
+                state->tasksUiActive = 1;
+            }
+
+            state->tasksUi.activeTask = -1;
+
         }
 
         //Switch to Moving Wagon Mode
         if (state->tasksUi.moveSelected) {
-            state->tasksUi = (UiTasks){0};
             state->tasksUi.cursorArea = -1;
             state->tasksUiActive = 0;
             state->movingWagon = true;
+            state->tasksUi.moveSelected = 0;
         }
 
         //Manual End Turn for tasks ui
@@ -1450,23 +1457,24 @@ void UpdateDrawFrame(void* v_state){
             state->WagonEnt.moveSpeed = 0.05f / (calcTileMoveCost(tarTileData)*2);
         }
 
-        bool skip = 0;
 
         if (moveWagon(&state->WagonEnt)) {
             state->movePathIdx += 1;
             if (state->movePathIdx == state->pathsize) {
+                // FINISHED MOVING TO NEW LOCATION 
                 state->movePathIdx = 0;
                 state->pathsize = 0;
+                int curTileData = getTileData(state->WagonEnt.wagonTilePos.x,state->WagonEnt.wagonTilePos.y,state->mapData);
+                setTasksData(curTileData,&state->tasksUi);
                 state->tasksUiActive = 1;
-                skip = 1;
+
             }
             else {
                 state->WagonEnt.wagonTargetTilePos = mapIdxToXY(state->path[state->movePathIdx], state->mapSizeX);
                 state->curTileTurnsTraversed = 0;
-                skip = 1;
             }
         }
-        if (!skip){
+        else {
             float tileAmountTraversed = 1.0f - completedDist;
             int turnAmountTraversed = round(tileAmountTraversed*(float)tileMoveCost);
             if (turnAmountTraversed > state->curTileTurnsTraversed) {
@@ -1767,8 +1775,11 @@ void UpdateDrawFrame(void* v_state){
                 }
 
                 int taskId = state->tasksUi.task[i].id;
+                int assigned = state->tasksUi.task[i].numAssigned;
+                int turnReq = state->tasksUi.task[i].turnsRequired;
+                int turnCmp = state->tasksUi.task[i].turnsActive;
 
-                renderTaskItem(state->ui, taskListStartX, taskListStartY, taskId, 0, 0, 0);
+                renderTaskItem(state->ui, taskListStartX, taskListStartY, taskId, assigned, turnReq, turnCmp);
                 if(state->tasksUi.cursorArea==1 && state->tasksUi.selectedTask==i) {
 
                     //Draw Number Assigned
@@ -1971,13 +1982,16 @@ int main(void)
     state.tasksUi.cursorArea = -1;
     state.tasksUiActive = 1;
     state.tasksUi.activeTask = -1;
+
+    int curTileData = getTileData(state.WagonEnt.wagonTilePos.x,state.WagonEnt.wagonTilePos.y,state.mapData);
+    setTasksData(curTileData,&state.tasksUi);
     
     #if defined(PLATFORM_WEB)
         emscripten_set_main_loop_arg(UpdateDrawFrame, &state, 60, 1);
     #else 
         SetTargetFPS(60); 
     // Main game loop
-    while (!WindowShouldClose()){
+    while (!WindowShouldClose()) {
         UpdateDrawFrame(&state);
     }
     #endif
