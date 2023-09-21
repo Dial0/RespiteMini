@@ -1667,6 +1667,17 @@ void UpdateDrawFrame(void* v_state){
             }
         }
 
+        int curTileData = getTileData(state->WagonEnt.wagonTilePos.x,state->WagonEnt.wagonTilePos.y,state->mapData);
+        int idxWagonPos = mapXYtoIdx(state->WagonEnt.wagonTilePos.x,state->WagonEnt.wagonTilePos.y,state->mapData);
+        if(state->darknessMap[idxWagonPos] >= calcTileMoveCost(curTileData)) {
+            int darknessPopLossBase = state->wagonPop / 4;
+            if (state->wagonPop <= 5) {
+                darknessPopLossBase = 1;
+            }
+            state->wagonPop -= darknessPopLossBase;
+        }
+
+
         if(state->wagonPop <= 0) {
             //game over
             state->showEndDialog = 1;
