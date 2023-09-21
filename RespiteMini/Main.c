@@ -117,6 +117,13 @@ Font font;
 int fontSize = 15;
 
 typedef struct Ini {
+    //Starting Resources
+    int wagonPopStart;
+    int wagonFoodStart;
+    int wagongWaterStart;
+    int wagongEffStart;
+
+
     //-----
     //Tasks
     //-----
@@ -1633,22 +1640,31 @@ void UpdateDrawFrame(void* v_state){
             state->wagonPop = 0;
         }
 
-        int numPopAssigned = 0;
-        for (int i = 0; i < state->tasksUi.numTasks; i++) {
-            numPopAssigned += state->tasksUi.task[i].numAssigned;
-        }
+        // int numPopAssigned = 0;
+        // for (int i = 0; i < state->tasksUi.numTasks; i++) {
+        //     numPopAssigned += state->tasksUi.task[i].numAssigned;
+        // }
+
         
-        state->wagonEffHealth -= numPopAssigned;
+        state->wagonEffHealth -= state->tasksUi.totAssigned;
         if (state->wagonEffHealth < state->wagonPop/4) {
             state->wagonEffHealth = state->wagonPop/4;
         }
 
-        if (state->wagonEffHealth < numPopAssigned) {
-            //we need to auto unassign people
+        if(state->wagonEffHealth > state->wagonPop) {
+            state->wagonEffHealth = state->wagonPop;
         }
 
-        if(state->wagonEffHealth > state->wagonPop) {
-            state->wagonEffHealth =state->wagonPop;
+        int taskIndex = 0;
+        while(state->wagonEffHealth < state->tasksUi.totAssigned) {
+            if (state->tasksUi.task[taskIndex].numAssigned) {
+                state->tasksUi.task[taskIndex].numAssigned -= 1;
+                state->tasksUi.totAssigned -= 1;
+            }
+            taskIndex += 1;
+            if (taskIndex >= state->tasksUi.numTasks) {
+                taskIndex = 0;
+            }
         }
 
         if(state->wagonPop <= 0) {
