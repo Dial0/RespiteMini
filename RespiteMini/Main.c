@@ -1309,7 +1309,6 @@ void resetState(State* state) {
     state->tasksUiActive = 1;
 }
 
-
 void UpdateDrawFrame(void* v_state){
 
     State* state = (State*)v_state;
@@ -1483,6 +1482,8 @@ void UpdateDrawFrame(void* v_state){
         //Game over - press enter to reset
         if(state->showEndDialog){
             resetState(state);
+            int curTileData = getTileData(state->WagonEnt.wagonTilePos.x,state->WagonEnt.wagonTilePos.y,state->mapData);
+            setTasksData(curTileData,&state->tasksUi);
         }
 
         //Select / Deselect task for assigning people
@@ -1493,8 +1494,6 @@ void UpdateDrawFrame(void* v_state){
                 state->tasksUi.activeTask = -1;
             }
         }
-
-        
 
     }
     
