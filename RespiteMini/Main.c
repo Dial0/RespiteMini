@@ -172,6 +172,7 @@ typedef struct State {
 
     bool playStartDemo;
     bool showEndDialog;
+    bool win;
 
     int movingWagon;
     bool wagonSelected;
@@ -1432,11 +1433,6 @@ void UpdateDrawFrame(void* v_state){
     if (scrollUp && state->smoothScrollY <= (state->map.height - state->baseSizeY + 1)*state->scale) state->smoothScrollY += 1;
     if (scrollDown && state->smoothScrollY>0) state->smoothScrollY -= 1;
 
-    if(state->tasksUiActive && state->tasksUi.cursorArea == -1){ //we just opened the menu, so we need to initalise it
-
-    }
-
-
     state->renderParams.smoothScrollY = state->smoothScrollY;
 
     if (state->movingWagon) {
@@ -1545,6 +1541,7 @@ void UpdateDrawFrame(void* v_state){
                 state->WagonEnt.wagonTargetTilePos = mapIdxToXY(state->path[state->movePathIdx], state->mapSizeX);
                 state->curTileTurnsTraversed = 0;
             }
+            LOG("Wagon Pos: %i, %i \n", state->WagonEnt.wagonTilePos.x,state->WagonEnt.wagonTilePos.y);
         }
         else {
             float tileAmountTraversed = 1.0f - completedDist;
@@ -1685,7 +1682,23 @@ void UpdateDrawFrame(void* v_state){
             state->movingWagon = false; 
             state->movePathIdx = 0;
             state->pathsize = 0;
+            state->win = 0;
         }
+
+        //If wagon position is within the final destination area
+        // show end screen "X amount of people escaped the darkness and arrived in Y turns"
+        if((state->WagonEnt.wagonTilePos.y > 58
+            &&state->WagonEnt.wagonTilePos.x > 25)
+            || (state->WagonEnt.wagonTilePos.y > 61
+            &&state->WagonEnt.wagonTilePos.x > 23)) {
+
+                state->showEndDialog = 1;
+                state->tasksUiActive = 0;
+                state->movingWagon = false; 
+                state->movePathIdx = 0;
+                state->pathsize = 0;
+                state->win = 1;
+            }
 
     }
 
@@ -1974,6 +1987,11 @@ void UpdateDrawFrame(void* v_state){
             int endWindowX = (state->mapSizeX * state->tileSize)/2 - endWindowWidth/2;
             int endWindowY = state->baseSizeY/2 - endWindowHeight/2;
             renderUiWindow(state->ui,endWindowX,endWindowY,endWindowWidth,endWindowHeight);
+            if(state->win) {
+                DrawTextEx(font, "Win", (struct Vector2) { endWindowX + 16, endWindowY + 8}, fontSize, 0, colorNormal);
+            } else {
+                DrawTextEx(font, "Lose", (struct Vector2) { endWindowX + 16, endWindowY + 8}, fontSize, 0, colorNormal);
+            }
         }
 
     //DrawTextEx(font, "test", (struct Vector2) { 5, 5 }, fontSize* scale, 1, RED);
