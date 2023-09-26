@@ -181,7 +181,7 @@ typedef struct State {
     int wagonWater;
     int wagonEffHealth;
     int wagonPop;
-    int path[12];
+    int path[200];
     int pathsize;
     int movePathIdx;
     int totalPathCost;
@@ -1435,7 +1435,7 @@ void UpdateDrawFrame(void* v_state){
     state->renderParams.smoothScrollY = state->smoothScrollY;
 
     if (state->movingWagon) {
-        state->pathsize = findAsPath(state->WagonEnt.wagonTilePos, state->cursTilePos, state->mapData, state->path, 12);
+        state->pathsize = findAsPath(state->WagonEnt.wagonTilePos, state->cursTilePos, state->mapData, state->path, 200);
         state->totalPathCost = 0;
         for (int i = 0; i < state->pathsize; i++) {
             unsigned int dataPos = 2 + state->path[i] * 4;
@@ -1557,7 +1557,6 @@ void UpdateDrawFrame(void* v_state){
         state->prevTurn = state->curTurn;
         
         if (state->curTurn > 20) { //dont start the darkness creep till we are past turn 20
-
 
             // Here we do the darkness creep
             for (int i = 0; i < (state->mapSizeX*state->mapSizeY); i++) {
@@ -1746,7 +1745,12 @@ void UpdateDrawFrame(void* v_state){
 
 
     if (state->pathsize) {
+
+        int pathRawTileCost = 0;
+
         for (int i = state->movePathIdx; i < state->pathsize; i++) {
+
+            
 
             int nextTile = i + 1;
             if (nextTile >= state->pathsize) nextTile = -1;
@@ -1806,14 +1810,16 @@ void UpdateDrawFrame(void* v_state){
             unsigned int tileData = getTileData(tileLoc.x, tileLoc.y, state->mapData);
             int tileMoveCost = calcTileMoveCost(tileData);
 
-            //DrawRectangle(pathPos.x, pathPos.y, tileSize, tileSize, ColorAlpha(RED, ((float)tileMoveCost-2.0f)/8.0f));
-            DrawTextureRec(state->ui, pathTileSrc, (struct Vector2) { pathPos.x, pathPos.y }, WHITE);
+            pathRawTileCost += tileMoveCost;
 
-            char str[2];
-            //sprintf_s(str, 2, "%i", tileMoveCost);
-            //DrawText(str, pathPos.x, pathPos.y, 6, RED);
+            int pathResourceCost = state->wagonPop*pathRawTileCost;
 
-            
+            if (pathResourceCost > state->wagonFood || pathResourceCost > state->wagonWater) {
+                DrawTextureRec(state->ui, pathTileSrc, (struct Vector2) { pathPos.x, pathPos.y }, RED);
+            } else {
+                DrawTextureRec(state->ui, pathTileSrc, (struct Vector2) { pathPos.x, pathPos.y }, WHITE);
+            }
+
         }
     }
 
